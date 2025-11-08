@@ -1,0 +1,48 @@
+# Dependencies
+node_modules/
+backend/venv/
+
+# Build outputs
+.next/
+dist/
+build/
+*.pyc
+__pycache__/
+
+# Environment variables
+.env
+.env.local
+.env.production.local
+.env.development.local
+
+# Database files
+backend/data/*.db
+backend/data/*.db-*
+
+# Vector database
+chroma_data/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Testing
+coverage/
+.pytest_cache/
+
+# Temporary files
+*.tmp
+.temp/
