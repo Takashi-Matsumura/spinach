@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { FaArrowLeft, FaCog, FaEdit, FaMicrochip, FaSave, FaServer, FaTimes, FaFileAlt } from "react-icons/fa";
+import { FaArrowLeft, FaCog, FaEdit, FaMicrochip, FaSave, FaServer, FaTimes, FaFileAlt, FaPlus, FaTrash, FaUser } from "react-icons/fa";
 import { config } from "../config";
 import { getTemplateById } from "../horenso/templates";
 
@@ -51,6 +51,12 @@ interface BackendSettings {
   };
 }
 
+interface DailyReportUser {
+  id: string;
+  name: string;
+  department: string;
+}
+
 interface AppInfoProps {
   onBack: () => void;
 }
@@ -73,9 +79,18 @@ export function AppInfo({ onBack }: AppInfoProps) {
   const [editedSystemPrompt, setEditedSystemPrompt] = useState("");
   const [templateSaveMessage, setTemplateSaveMessage] = useState<string | null>(null);
 
+  // 日報ユーザ管理用のstate
+  const [dailyReportUsers, setDailyReportUsers] = useState<DailyReportUser[]>([]);
+  const [newUserName, setNewUserName] = useState("");
+  const [newUserDepartment, setNewUserDepartment] = useState("");
+  const [editingUserId, setEditingUserId] = useState<string | null>(null);
+  const [editingUserName, setEditingUserName] = useState("");
+  const [editingUserDepartment, setEditingUserDepartment] = useState("");
+
   useEffect(() => {
     fetchData();
     loadSystemPrompt();
+    loadDailyReportUsers();
   }, []);
 
   // システムプロンプトを読み込む
@@ -212,6 +227,79 @@ export function AppInfo({ onBack }: AppInfoProps) {
     }
   };
 
+  // 日報ユーザを読み込む
+  const loadDailyReportUsers = () => {
+    const stored = localStorage.getItem("daily-report-users");
+    if (stored) {
+      try {
+        const users = JSON.parse(stored);
+        setDailyReportUsers(users);
+      } catch (error) {
+        console.error("Failed to load daily report users:", error);
+      }
+    }
+  };
+
+  // 日報ユーザを保存する
+  const saveDailyReportUsers = (users: DailyReportUser[]) => {
+    localStorage.setItem("daily-report-users", JSON.stringify(users));
+    setDailyReportUsers(users);
+  };
+
+  // 新しいユーザを追加
+  const handleAddUser = () => {
+    if (!newUserName.trim() || !newUserDepartment.trim()) {
+      return;
+    }
+
+    const newUser: DailyReportUser = {
+      id: Date.now().toString(),
+      name: newUserName.trim(),
+      department: newUserDepartment.trim(),
+    };
+
+    const updatedUsers = [...dailyReportUsers, newUser];
+    saveDailyReportUsers(updatedUsers);
+    setNewUserName("");
+    setNewUserDepartment("");
+  };
+
+  // ユーザを削除
+  const handleDeleteUser = (userId: string) => {
+    const updatedUsers = dailyReportUsers.filter((user) => user.id !== userId);
+    saveDailyReportUsers(updatedUsers);
+  };
+
+  // ユーザの編集を開始
+  const handleStartEditUser = (user: DailyReportUser) => {
+    setEditingUserId(user.id);
+    setEditingUserName(user.name);
+    setEditingUserDepartment(user.department);
+  };
+
+  // ユーザの編集をキャンセル
+  const handleCancelEditUser = () => {
+    setEditingUserId(null);
+    setEditingUserName("");
+    setEditingUserDepartment("");
+  };
+
+  // ユーザの編集を保存
+  const handleSaveEditUser = () => {
+    if (!editingUserId || !editingUserName.trim() || !editingUserDepartment.trim()) {
+      return;
+    }
+
+    const updatedUsers = dailyReportUsers.map((user) =>
+      user.id === editingUserId
+        ? { ...user, name: editingUserName.trim(), department: editingUserDepartment.trim() }
+        : user
+    );
+
+    saveDailyReportUsers(updatedUsers);
+    handleCancelEditUser();
+  };
+
   return (
     <div className="flex flex-col h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200 gradient-animate relative p-2.5">
       {/* Decorative elements */}
@@ -285,7 +373,7 @@ export function AppInfo({ onBack }: AppInfoProps) {
             }`}
           >
             <FaFileAlt />
-            テンプレート
+            日報設定
           </button>
         </div>
       </header>
@@ -649,6 +737,164 @@ export function AppInfo({ onBack }: AppInfoProps) {
               {/* Templates Tab */}
               {activeTab === "templates" && (
                 <div className="space-y-6 animate-fade-in">
+                  {/* 日報ユーザ管理 */}
+                  <div className="bg-white border-2 border-gray-200 rounded-lg p-5">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                        <FaUser className="text-gray-700" />
+                        日報ユーザ管理
+                      </h3>
+                    </div>
+
+                    <p className="text-sm text-gray-600 mb-4">
+                      日報を作成する社員の情報を管理します。ここで登録したユーザを日報作成時に選択できます。
+                    </p>
+
+                    {/* 新規ユーザ追加フォーム */}
+                    <div className="bg-gray-50 rounded-lg p-4 mb-4">
+                      <h4 className="text-sm font-semibold text-gray-700 mb-3">新規ユーザ追加</h4>
+                      <div className="flex gap-3">
+                        <input
+                          type="text"
+                          value={newUserName}
+                          onChange={(e) => setNewUserName(e.target.value)}
+                          placeholder="社員名"
+                          className="flex-1 px-3 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500 text-sm"
+                        />
+                        <input
+                          type="text"
+                          value={newUserDepartment}
+                          onChange={(e) => setNewUserDepartment(e.target.value)}
+                          placeholder="部署名"
+                          className="flex-1 px-3 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500 text-sm"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleAddUser}
+                          disabled={!newUserName.trim() || !newUserDepartment.trim()}
+                          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors duration-200 text-sm font-semibold flex items-center gap-2"
+                        >
+                          <FaPlus />
+                          追加
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* ユーザテーブル */}
+                    {dailyReportUsers.length > 0 ? (
+                      <div className="overflow-x-auto">
+                        <table className="w-full border-collapse table-fixed">
+                          <thead>
+                            <tr className="bg-gray-100 border-b-2 border-gray-300">
+                              <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 w-[30%]">
+                                社員名
+                              </th>
+                              <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 w-[30%]">
+                                部署名
+                              </th>
+                              <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700 w-[40%]">
+                                操作
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {dailyReportUsers.map((user) => (
+                              <tr
+                                key={user.id}
+                                className="border-b border-gray-200 hover:bg-gray-50 transition-colors"
+                              >
+                                {editingUserId === user.id ? (
+                                  <>
+                                    <td className="px-4 py-3 w-[30%]">
+                                      <input
+                                        type="text"
+                                        value={editingUserName}
+                                        onChange={(e) => setEditingUserName(e.target.value)}
+                                        className="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                      />
+                                    </td>
+                                    <td className="px-4 py-3 w-[30%]">
+                                      <input
+                                        type="text"
+                                        value={editingUserDepartment}
+                                        onChange={(e) => setEditingUserDepartment(e.target.value)}
+                                        className="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                      />
+                                    </td>
+                                    <td className="px-4 py-3 text-right w-[40%]">
+                                      <div className="flex gap-2 justify-end items-center">
+                                        <button
+                                          type="button"
+                                          onClick={handleSaveEditUser}
+                                          className="p-2 text-white rounded-lg transition-colors duration-200"
+                                          style={{ backgroundColor: "#16a34a" }}
+                                          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#15803d")}
+                                          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#16a34a")}
+                                          title="保存"
+                                        >
+                                          <FaSave className="text-sm" />
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={handleCancelEditUser}
+                                          className="p-2 text-white rounded-lg transition-colors duration-200"
+                                          style={{ backgroundColor: "#6b7280" }}
+                                          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#4b5563")}
+                                          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#6b7280")}
+                                          title="キャンセル"
+                                        >
+                                          <FaTimes className="text-sm" />
+                                        </button>
+                                      </div>
+                                    </td>
+                                  </>
+                                ) : (
+                                  <>
+                                    <td className="px-4 py-3 text-sm text-gray-900 w-[30%]">{user.name}</td>
+                                    <td className="px-4 py-3 text-sm text-gray-900 w-[30%]">
+                                      {user.department}
+                                    </td>
+                                    <td className="px-4 py-3 text-right w-[40%]">
+                                      <div className="flex gap-2 justify-end items-center">
+                                        <button
+                                          type="button"
+                                          onClick={() => handleStartEditUser(user)}
+                                          className="p-2 text-white rounded-lg transition-colors duration-200"
+                                          style={{ backgroundColor: "#374151" }}
+                                          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#1f2937")}
+                                          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#374151")}
+                                          title="編集"
+                                        >
+                                          <FaEdit className="text-sm" />
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => handleDeleteUser(user.id)}
+                                          className="p-2 text-white rounded-lg transition-colors duration-200"
+                                          style={{ backgroundColor: "#dc2626" }}
+                                          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#b91c1c")}
+                                          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#dc2626")}
+                                          title="削除"
+                                        >
+                                          <FaTrash className="text-sm" />
+                                        </button>
+                                      </div>
+                                    </td>
+                                  </>
+                                )}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 text-gray-500 text-sm">
+                        ユーザが登録されていません。上のフォームから追加してください。
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 日報システムプロンプト */}
                   <div className="bg-white border-2 border-gray-200 rounded-lg p-5">
                     <div className="flex items-center justify-between mb-4">
                       <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
