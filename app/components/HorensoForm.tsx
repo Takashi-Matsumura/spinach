@@ -189,7 +189,7 @@ export function HorensoForm({ template, onSubmit, onBack }: HorensoFormProps) {
               </button>
               <button
                 type="submit"
-                className="rounded-lg bg-blue-600 px-6 py-2 font-medium text-white hover:bg-blue-700"
+                className="rounded-lg bg-gray-800 px-6 py-2 font-medium text-white hover:bg-gray-900"
               >
                 AIに相談する
               </button>

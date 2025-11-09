@@ -295,8 +295,14 @@ export function HorensoChat({ template, onComplete, onBack }: HorensoChatProps) 
           const selectedUser = dailyReportUsers.find((u) => u.id === selectedUserId);
           if (selectedUser) {
             const now = new Date().toISOString();
+            // ユーザーメッセージとアシスタントメッセージの両方を含める
             const updatedMessages = [
               ...messages,
+              {
+                id: `${Date.now()}-user`,
+                role: "user" as const,
+                content: userInput,
+              },
               {
                 id: `${Date.now()}-assistant`,
                 role: "assistant" as const,
@@ -607,7 +613,7 @@ export function HorensoChat({ template, onComplete, onBack }: HorensoChatProps) 
                   <button
                     type="button"
                     onClick={handleSaveReport}
-                    className="rounded-lg bg-green-600 px-6 py-2 font-medium text-white hover:bg-green-700"
+                    className="rounded-lg bg-gray-800 px-6 py-2 font-medium text-white hover:bg-gray-900"
                   >
                     保存する
                   </button>
@@ -645,10 +651,7 @@ export function HorensoChat({ template, onComplete, onBack }: HorensoChatProps) 
               <button
                 type="button"
                 onClick={handleNewReport}
-                className="px-3 py-1.5 text-sm font-medium text-white rounded-lg transition-colors duration-200"
-                style={{ backgroundColor: "#10b981" }}
-                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#059669")}
-                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#10b981")}
+                className="px-3 py-1.5 text-sm font-medium bg-gray-800 text-white rounded-lg hover:bg-gray-900 transition-colors duration-200"
               >
                 新規作成
               </button>
@@ -699,10 +702,7 @@ export function HorensoChat({ template, onComplete, onBack }: HorensoChatProps) 
                     <button
                       type="button"
                       onClick={(e) => handleDeleteReport(report.id, e)}
-                      className="p-2 rounded-lg transition-colors duration-200 hover:bg-red-100"
-                      style={{ color: "#ef4444" }}
-                      onMouseEnter={(e) => (e.currentTarget.style.color = "#dc2626")}
-                      onMouseLeave={(e) => (e.currentTarget.style.color = "#ef4444")}
+                      className="p-2 rounded-lg transition-colors duration-200 text-gray-600 hover:bg-gray-100 hover:text-gray-900"
                       title="削除"
                     >
                       <FaTrash className="text-sm" />

@@ -385,7 +385,7 @@ export default function Home() {
                     setViewMode("horenso-form");
                   }
                 }}
-                className="w-12 h-12 rounded-full bg-green-600 hover:bg-green-700 text-white flex items-center justify-center transition-all duration-300 shadow-lg hover:scale-105"
+                className="w-12 h-12 rounded-full bg-gray-700 hover:bg-gray-800 text-white flex items-center justify-center transition-all duration-300 shadow-lg hover:scale-105"
                 aria-label="日報"
                 title="日報を作成"
               >

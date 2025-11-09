@@ -531,7 +531,7 @@ export function AppInfo({ onBack }: AppInfoProps) {
                           <button
                             type="button"
                             onClick={handleSaveBackendUrl}
-                            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all flex items-center gap-2 text-sm font-semibold"
+                            className="px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-900 transition-all flex items-center gap-2 text-sm font-semibold"
                           >
                             <FaSave />
                             保存
@@ -539,7 +539,7 @@ export function AppInfo({ onBack }: AppInfoProps) {
                           <button
                             type="button"
                             onClick={handleCancelBackendEdit}
-                            className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-all flex items-center gap-2 text-sm font-semibold"
+                            className="px-4 py-2 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition-all flex items-center gap-2 text-sm font-semibold"
                           >
                             <FaTimes />
                             キャンセル
@@ -606,7 +606,7 @@ export function AppInfo({ onBack }: AppInfoProps) {
                           <button
                             type="button"
                             onClick={handleSaveSettings}
-                            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all flex items-center gap-2 text-sm font-semibold"
+                            className="px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-900 transition-all flex items-center gap-2 text-sm font-semibold"
                           >
                             <FaSave />
                             保存
@@ -614,7 +614,7 @@ export function AppInfo({ onBack }: AppInfoProps) {
                           <button
                             type="button"
                             onClick={handleCancelEdit}
-                            className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-all flex items-center gap-2 text-sm font-semibold"
+                            className="px-4 py-2 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition-all flex items-center gap-2 text-sm font-semibold"
                           >
                             <FaTimes />
                             キャンセル
@@ -772,7 +772,7 @@ export function AppInfo({ onBack }: AppInfoProps) {
                           type="button"
                           onClick={handleAddUser}
                           disabled={!newUserName.trim() || !newUserDepartment.trim()}
-                          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors duration-200 text-sm font-semibold flex items-center gap-2"
+                          className="px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-900 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors duration-200 text-sm font-semibold flex items-center gap-2"
                         >
                           <FaPlus />
                           追加
@@ -827,9 +827,9 @@ export function AppInfo({ onBack }: AppInfoProps) {
                                           type="button"
                                           onClick={handleSaveEditUser}
                                           className="p-2 text-white rounded-lg transition-colors duration-200"
-                                          style={{ backgroundColor: "#16a34a" }}
-                                          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#15803d")}
-                                          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#16a34a")}
+                                          style={{ backgroundColor: "#1f2937" }}
+                                          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#111827")}
+                                          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#1f2937")}
                                           title="保存"
                                         >
                                           <FaSave className="text-sm" />
@@ -837,10 +837,7 @@ export function AppInfo({ onBack }: AppInfoProps) {
                                         <button
                                           type="button"
                                           onClick={handleCancelEditUser}
-                                          className="p-2 text-white rounded-lg transition-colors duration-200"
-                                          style={{ backgroundColor: "#6b7280" }}
-                                          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#4b5563")}
-                                          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#6b7280")}
+                                          className="p-2 text-gray-600 rounded-lg transition-colors duration-200 hover:bg-gray-100 hover:text-gray-900"
                                           title="キャンセル"
                                         >
                                           <FaTimes className="text-sm" />
@@ -870,10 +867,7 @@ export function AppInfo({ onBack }: AppInfoProps) {
                                         <button
                                           type="button"
                                           onClick={() => handleDeleteUser(user.id)}
-                                          className="p-2 text-white rounded-lg transition-colors duration-200"
-                                          style={{ backgroundColor: "#dc2626" }}
-                                          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#b91c1c")}
-                                          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#dc2626")}
+                                          className="p-2 text-gray-600 rounded-lg transition-colors duration-200 hover:bg-gray-100 hover:text-gray-900"
                                           title="削除"
                                         >
                                           <FaTrash className="text-sm" />
@@ -907,7 +901,7 @@ export function AppInfo({ onBack }: AppInfoProps) {
                             <button
                               type="button"
                               onClick={handleResetTemplate}
-                              className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors duration-200 text-sm font-semibold flex items-center gap-2"
+                              className="px-4 py-2 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors duration-200 text-sm font-semibold flex items-center gap-2"
                             >
                               <FaTimes />
                               デフォルトに戻す
@@ -915,7 +909,7 @@ export function AppInfo({ onBack }: AppInfoProps) {
                             <button
                               type="button"
                               onClick={handleEditTemplateClick}
-                              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 text-sm font-semibold flex items-center gap-2"
+                              className="px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-900 transition-colors duration-200 text-sm font-semibold flex items-center gap-2"
                             >
                               <FaEdit />
                               編集
@@ -926,7 +920,7 @@ export function AppInfo({ onBack }: AppInfoProps) {
                             <button
                               type="button"
                               onClick={handleCancelTemplateEdit}
-                              className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors duration-200 text-sm font-semibold flex items-center gap-2"
+                              className="px-4 py-2 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors duration-200 text-sm font-semibold flex items-center gap-2"
                             >
                               <FaTimes />
                               キャンセル
@@ -934,7 +928,7 @@ export function AppInfo({ onBack }: AppInfoProps) {
                             <button
                               type="button"
                               onClick={handleSaveTemplate}
-                              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200 text-sm font-semibold flex items-center gap-2"
+                              className="px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-900 transition-colors duration-200 text-sm font-semibold flex items-center gap-2"
                             >
                               <FaSave />
                               保存
