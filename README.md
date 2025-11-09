@@ -31,6 +31,7 @@ Spinachは、ローカルLLMとRAGを組み合わせたWebアプリケーショ�
 - **React** 19.1.0
 - **TypeScript** 5.x
 - **Tailwind CSS** 4.x
+- **Prisma** 6.19.0 - ORM（SQLite/PostgreSQL）
 - **react-markdown** - Markdown レンダリング
 - **Mermaid** - 図表生成
 - **Biome** - リンター/フォーマッター
@@ -38,9 +39,14 @@ Spinachは、ローカルLLMとRAGを組み合わせたWebアプリケーショ�
 ### バックエンド
 - **FastAPI** 0.115.6
 - **Python** 3.11+
-- **ChromaDB** 0.5.23 - ベクトルデータベース
+- **ChromaDB** 0.5.23 - ベクトルデータベース（RAG用）
 - **Sentence Transformers** 3.3.1 - 埋め込みモデル
 - **llama.cpp** - LLM推論エンジン（外部サービス）
+
+### データベース
+- **開発環境**: SQLite（Prisma経由）
+- **本番環境**: PostgreSQL（推奨）
+- **ベクトルDB**: ChromaDB（RAG機能用、変更なし）
 
 ### LLMモデル
 - **Google Gemma 3N-E4B** (6.9B パラメータ, Q6_K量子化)
@@ -81,8 +87,13 @@ cd spinach
 # 依存パッケージのインストール
 npm install
 
-# 環境変数ファイルの作成（オプション）
-# .env.local ファイルを作成して以下の内容を記載
+# 環境変数ファイルの作成
+# .env ファイルを作成（Prisma用）
+cat > .env << 'EOF'
+DATABASE_URL="file:./dev.db"
+EOF
+
+# .env.local ファイルを作成（オプション）
 cat > .env.local << 'EOF'
 # Backend API URL
 NEXT_PUBLIC_BACKEND_URL=http://localhost:8000
@@ -90,7 +101,16 @@ NEXT_PUBLIC_BACKEND_URL=http://localhost:8000
 # Application Info
 NEXT_PUBLIC_APP_NAME=Spinach
 NEXT_PUBLIC_APP_VERSION=0.1.0
+DATABASE_URL="file:./dev.db"
 EOF
+
+# Prismaマイグレーションの実行
+npx prisma migrate dev --name init
+# または既存のマイグレーションを適用する場合
+# npx prisma migrate deploy
+
+# Prisma Clientの生成
+npx prisma generate
 
 # 開発サーバーの起動
 npm run dev
@@ -218,6 +238,18 @@ CORS_ORIGINS=http://localhost:3000,https://localhost:3000
 ```
 spinach/
 ├── app/                      # Next.js アプリケーション
+│   ├── api/                  # Next.js API Routes
+│   │   ├── daily-report-users/ # 日報ユーザー管理API
+│   │   │   ├── route.ts      # GET, POST
+│   │   │   └── [id]/         # PUT, DELETE
+│   │   ├── daily-reports/    # 日報管理API
+│   │   │   ├── route.ts      # GET, POST
+│   │   │   └── [id]/         # GET, PUT, DELETE
+│   │   ├── chat-sessions/    # チャットセッション管理API
+│   │   │   ├── route.ts      # GET, POST
+│   │   │   └── [id]/         # GET, PUT, DELETE
+│   │   └── settings/         # 設定管理API
+│   │       └── route.ts      # GET, PUT
 │   ├── components/           # Reactコンポーネント
 │   │   ├── AppInfo.tsx       # アプリ情報・設定画面
 │   │   ├── ChatMessage.tsx   # チャットメッセージ表示
@@ -234,6 +266,11 @@ spinach/
 │   ├── types/                # TypeScript型定義
 │   ├── config.ts             # 設定管理（環境変数・localStorage）
 │   └── page.tsx              # メインページ
+├── prisma/                   # Prisma ORM
+│   ├── schema.prisma         # データベーススキーマ定義
+│   └── migrations/           # マイグレーションファイル
+├── lib/                      # ライブラリ
+│   └── prisma.ts             # Prisma Client singleton
 ├── backend/                  # FastAPI バックエンド
 │   ├── routes/               # APIルート
 │   │   ├── chat.py           # チャットエンドポイント
@@ -249,6 +286,7 @@ spinach/
 ├── public/                   # 静的ファイル
 ├── package.json              # Node.js依存関係
 ├── requirements.txt          # Python依存関係
+├── prisma.config.ts          # Prisma設定
 ├── biome.json                # Biome設定
 ├── tailwind.config.ts        # Tailwind CSS設定
 └── tsconfig.json             # TypeScript設定
@@ -284,7 +322,33 @@ npm start
 
 ### APIエンドポイント
 
-#### バックエンドAPI
+#### フロントエンドAPI（Next.js API Routes）
+
+**日報ユーザー管理**:
+- `GET /api/daily-report-users` - 全ユーザー取得
+- `POST /api/daily-report-users` - ユーザー作成
+- `PUT /api/daily-report-users/[id]` - ユーザー更新
+- `DELETE /api/daily-report-users/[id]` - ユーザー削除
+
+**日報管理**:
+- `GET /api/daily-reports?userId={userId}&reportDate={date}` - 日報取得（フィルタ可）
+- `POST /api/daily-reports` - 日報作成/更新（upsert）
+- `GET /api/daily-reports/[id]` - 日報詳細取得
+- `PUT /api/daily-reports/[id]` - 日報更新
+- `DELETE /api/daily-reports/[id]` - 日報削除
+
+**チャットセッション管理**:
+- `GET /api/chat-sessions` - 全セッション取得
+- `POST /api/chat-sessions` - セッション作成/更新（upsert）
+- `GET /api/chat-sessions/[id]` - セッション詳細取得
+- `PUT /api/chat-sessions/[id]` - セッション更新
+- `DELETE /api/chat-sessions/[id]` - セッション削除
+
+**設定管理**:
+- `GET /api/settings` - 全設定取得（key-valueオブジェクト）
+- `PUT /api/settings` - 設定更新（複数のkey-valueを一括更新）
+
+#### バックエンドAPI（FastAPI）
 
 - `GET /health` - ヘルスチェック
 - `GET /api/llm-info` - LLMモデル情報取得
@@ -306,9 +370,57 @@ npm start
 
 プルリクエストやイシューの報告を歓迎します。
 
+## データベース
+
+### データ永続化
+
+アプリケーションデータは以下のように管理されています：
+
+- **日報ユーザー**: Prisma（SQLite）に保存
+- **日報データ**: Prisma（SQLite）に保存
+- **チャットセッション**: Prisma（SQLite）に保存
+- **アプリ設定**: Prisma（SQLite）に保存
+- **RAGベクトルデータ**: ChromaDB（`chroma_data/`ディレクトリ）に保存
+
+### PostgreSQLへの移行（本番環境）
+
+本番環境でPostgreSQLを使用する場合：
+
+1. `prisma/schema.prisma`の`datasource db`を編集：
+```prisma
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+```
+
+2. `.env`ファイルの`DATABASE_URL`を更新：
+```env
+DATABASE_URL="postgresql://user:password@localhost:5432/spinach?schema=public"
+```
+
+3. マイグレーションを実行：
+```bash
+npx prisma migrate deploy
+```
+
+### Prismaデバッグコマンド
+
+```bash
+# Prisma Studioでデータを確認
+npx prisma studio
+
+# スキーマをデータベースに反映（開発時）
+npx prisma db push
+
+# マイグレーションをリセット（開発時のみ）
+npx prisma migrate reset
+```
+
 ## 注意事項
 
 - このアプリケーションはローカル環境での使用を想定しています
 - llama.cppサーバーが正常に起動していることを確認してください
 - 初回実行時、埋め込みモデルのダウンロードに時間がかかる場合があります
 - RAG機能を使用するには、事前にドキュメントをアップロードする必要があります
+- データベースファイル（`dev.db`など）はGit管理から除外されています

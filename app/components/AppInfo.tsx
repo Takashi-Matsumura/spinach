@@ -94,15 +94,25 @@ export function AppInfo({ onBack }: AppInfoProps) {
   }, []);
 
   // システムプロンプトを読み込む
-  const loadSystemPrompt = () => {
-    const stored = localStorage.getItem("horenso-system-prompt-daily-report");
-    if (stored) {
-      setEditedSystemPrompt(stored);
-    } else {
-      const dailyReportTemplate = getTemplateById("daily-report");
-      if (dailyReportTemplate) {
-        setEditedSystemPrompt(dailyReportTemplate.systemPrompt);
+  const loadSystemPrompt = async () => {
+    try {
+      const response = await fetch("/api/settings");
+      if (response.ok) {
+        const settings = await response.json();
+        const stored = settings["horenso-system-prompt-daily-report"];
+        if (stored) {
+          setEditedSystemPrompt(stored);
+          return;
+        }
       }
+    } catch (error) {
+      console.error("Failed to load system prompt from API:", error);
+    }
+
+    // デフォルトテンプレートを使用
+    const dailyReportTemplate = getTemplateById("daily-report");
+    if (dailyReportTemplate) {
+      setEditedSystemPrompt(dailyReportTemplate.systemPrompt);
     }
   };
 
@@ -207,9 +217,20 @@ export function AppInfo({ onBack }: AppInfoProps) {
   };
 
   // テンプレートを保存
-  const handleSaveTemplate = () => {
+  const handleSaveTemplate = async () => {
     try {
-      localStorage.setItem("horenso-system-prompt-daily-report", editedSystemPrompt);
+      const response = await fetch("/api/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          "horenso-system-prompt-daily-report": editedSystemPrompt,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("テンプレートの保存に失敗しました");
+      }
+
       setTemplateSaveMessage("日報テンプレートを保存しました");
       setIsEditingTemplate(false);
     } catch (err) {
@@ -218,56 +239,90 @@ export function AppInfo({ onBack }: AppInfoProps) {
   };
 
   // テンプレートをデフォルトに戻す
-  const handleResetTemplate = () => {
+  const handleResetTemplate = async () => {
     const dailyReportTemplate = getTemplateById("daily-report");
     if (dailyReportTemplate) {
       setEditedSystemPrompt(dailyReportTemplate.systemPrompt);
-      localStorage.removeItem("horenso-system-prompt-daily-report");
-      setTemplateSaveMessage("デフォルトのテンプレートに戻しました");
-    }
-  };
 
-  // 日報ユーザを読み込む
-  const loadDailyReportUsers = () => {
-    const stored = localStorage.getItem("daily-report-users");
-    if (stored) {
       try {
-        const users = JSON.parse(stored);
-        setDailyReportUsers(users);
+        // デフォルト値をAPIに保存
+        await fetch("/api/settings", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            "horenso-system-prompt-daily-report": dailyReportTemplate.systemPrompt,
+          }),
+        });
+        setTemplateSaveMessage("デフォルトのテンプレートに戻しました");
       } catch (error) {
-        console.error("Failed to load daily report users:", error);
+        console.error("Failed to reset template:", error);
+        setTemplateSaveMessage("デフォルトのテンプレートに戻しました（保存は失敗）");
       }
     }
   };
 
-  // 日報ユーザを保存する
-  const saveDailyReportUsers = (users: DailyReportUser[]) => {
-    localStorage.setItem("daily-report-users", JSON.stringify(users));
-    setDailyReportUsers(users);
+  // 日報ユーザを読み込む
+  const loadDailyReportUsers = async () => {
+    try {
+      const response = await fetch("/api/daily-report-users");
+      if (response.ok) {
+        const users = await response.json();
+        setDailyReportUsers(users);
+      }
+    } catch (error) {
+      console.error("Failed to load daily report users:", error);
+    }
   };
 
   // 新しいユーザを追加
-  const handleAddUser = () => {
+  const handleAddUser = async () => {
     if (!newUserName.trim() || !newUserDepartment.trim()) {
       return;
     }
 
-    const newUser: DailyReportUser = {
-      id: Date.now().toString(),
-      name: newUserName.trim(),
-      department: newUserDepartment.trim(),
-    };
+    try {
+      const response = await fetch("/api/daily-report-users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: newUserName.trim(),
+          department: newUserDepartment.trim(),
+        }),
+      });
 
-    const updatedUsers = [...dailyReportUsers, newUser];
-    saveDailyReportUsers(updatedUsers);
-    setNewUserName("");
-    setNewUserDepartment("");
+      if (!response.ok) {
+        throw new Error("ユーザーの追加に失敗しました");
+      }
+
+      await loadDailyReportUsers();
+      setNewUserName("");
+      setNewUserDepartment("");
+    } catch (error) {
+      console.error("Failed to add user:", error);
+      alert(error instanceof Error ? error.message : "ユーザーの追加に失敗しました");
+    }
   };
 
   // ユーザを削除
-  const handleDeleteUser = (userId: string) => {
-    const updatedUsers = dailyReportUsers.filter((user) => user.id !== userId);
-    saveDailyReportUsers(updatedUsers);
+  const handleDeleteUser = async (userId: string) => {
+    if (!confirm("このユーザーを削除しますか？")) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/daily-report-users/${userId}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        throw new Error("ユーザーの削除に失敗しました");
+      }
+
+      await loadDailyReportUsers();
+    } catch (error) {
+      console.error("Failed to delete user:", error);
+      alert(error instanceof Error ? error.message : "ユーザーの削除に失敗しました");
+    }
   };
 
   // ユーザの編集を開始
@@ -285,19 +340,31 @@ export function AppInfo({ onBack }: AppInfoProps) {
   };
 
   // ユーザの編集を保存
-  const handleSaveEditUser = () => {
+  const handleSaveEditUser = async () => {
     if (!editingUserId || !editingUserName.trim() || !editingUserDepartment.trim()) {
       return;
     }
 
-    const updatedUsers = dailyReportUsers.map((user) =>
-      user.id === editingUserId
-        ? { ...user, name: editingUserName.trim(), department: editingUserDepartment.trim() }
-        : user
-    );
+    try {
+      const response = await fetch(`/api/daily-report-users/${editingUserId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: editingUserName.trim(),
+          department: editingUserDepartment.trim(),
+        }),
+      });
 
-    saveDailyReportUsers(updatedUsers);
-    handleCancelEditUser();
+      if (!response.ok) {
+        throw new Error("ユーザーの更新に失敗しました");
+      }
+
+      await loadDailyReportUsers();
+      handleCancelEditUser();
+    } catch (error) {
+      console.error("Failed to update user:", error);
+      alert(error instanceof Error ? error.message : "ユーザーの更新に失敗しました");
+    }
   };
 
   return (

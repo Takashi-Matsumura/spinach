@@ -52,43 +52,32 @@ export default function Home() {
     }
   }, [messages, isLoading, scrollToBottom]);
 
-  // Save session to localStorage
-  const saveSession = useCallback((sessionId: string, msgs: Message[]) => {
+  // Save session to API
+  const saveSession = useCallback(async (sessionId: string, msgs: Message[]) => {
     try {
-      // Save messages
-      localStorage.setItem(`chatSession_${sessionId}`, JSON.stringify(msgs));
+      const title = msgs.length > 0 ? msgs[0].content.substring(0, 50) : "新しいチャット";
 
-      // Update session metadata
-      const savedSessions = localStorage.getItem("chatSessions");
-      const sessions = savedSessions ? JSON.parse(savedSessions) : [];
-
-      const existingIndex = sessions.findIndex((s: { id: string }) => s.id === sessionId);
-      const sessionData = {
-        id: sessionId,
-        title: msgs.length > 0 ? msgs[0].content.substring(0, 50) : "新しいチャット",
-        timestamp: Date.now(),
-        messageCount: msgs.length,
-      };
-
-      if (existingIndex >= 0) {
-        sessions[existingIndex] = sessionData;
-      } else {
-        sessions.push(sessionData);
-      }
-
-      localStorage.setItem("chatSessions", JSON.stringify(sessions));
+      await fetch("/api/chat-sessions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: sessionId,
+          title,
+          messages: msgs,
+        }),
+      });
     } catch (error) {
       console.error("Failed to save session:", error);
     }
   }, []);
 
-  // Load session from localStorage
-  const loadSession = useCallback((sessionId: string) => {
+  // Load session from API
+  const loadSession = useCallback(async (sessionId: string) => {
     try {
-      const savedMessages = localStorage.getItem(`chatSession_${sessionId}`);
-      if (savedMessages) {
-        const msgs = JSON.parse(savedMessages);
-        setMessages(msgs);
+      const response = await fetch(`/api/chat-sessions/${sessionId}`);
+      if (response.ok) {
+        const session = await response.json();
+        setMessages(session.messages);
         setCurrentSessionId(sessionId);
       }
     } catch (error) {
@@ -98,7 +87,7 @@ export default function Home() {
 
   // Create new session
   const createNewSession = useCallback(() => {
-    const newSessionId = `session_${Date.now()}`;
+    const newSessionId = crypto.randomUUID();
     setCurrentSessionId(newSessionId);
     setMessages([]);
     setInput("");
@@ -372,17 +361,29 @@ export default function Home() {
               {/* 日報ボタン */}
               <button
                 type="button"
-                onClick={() => {
+                onClick={async () => {
                   const dailyReportTemplate = getTemplateById("daily-report");
                   if (dailyReportTemplate) {
-                    // localStorageからカスタムシステムプロンプトを読み込む
-                    const customSystemPrompt = localStorage.getItem("horenso-system-prompt-daily-report");
-                    const templateToUse = customSystemPrompt
-                      ? { ...dailyReportTemplate, systemPrompt: customSystemPrompt }
-                      : dailyReportTemplate;
+                    // APIからカスタムシステムプロンプトを読み込む
+                    try {
+                      const response = await fetch("/api/settings");
+                      let customSystemPrompt: string | null = null;
+                      if (response.ok) {
+                        const settings = await response.json();
+                        customSystemPrompt = settings["horenso-system-prompt-daily-report"];
+                      }
+                      const templateToUse = customSystemPrompt
+                        ? { ...dailyReportTemplate, systemPrompt: customSystemPrompt }
+                        : dailyReportTemplate;
 
-                    setSelectedTemplate(templateToUse);
-                    setViewMode("horenso-form");
+                      setSelectedTemplate(templateToUse);
+                      setViewMode("horenso-form");
+                    } catch (error) {
+                      console.error("Failed to load system prompt:", error);
+                      // エラーの場合はデフォルトテンプレートを使用
+                      setSelectedTemplate(dailyReportTemplate);
+                      setViewMode("horenso-form");
+                    }
                   }
                 }}
                 className="w-12 h-12 rounded-full bg-gray-700 hover:bg-gray-800 text-white flex items-center justify-center transition-all duration-300 shadow-lg hover:scale-105"

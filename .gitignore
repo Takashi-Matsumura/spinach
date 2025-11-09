@@ -18,6 +18,11 @@ __pycache__/
 # Database files
 backend/data/*.db
 backend/data/*.db-*
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+prisma/migrations/
 
 # Vector database
 chroma_data/
@@ -46,3 +51,5 @@ coverage/
 # Temporary files
 *.tmp
 .temp/
+
+/app/generated/prisma

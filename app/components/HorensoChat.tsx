@@ -73,16 +73,15 @@ export function HorensoChat({ template, onComplete, onBack }: HorensoChatProps) 
 
   // 日報ユーザーを読み込む
   useEffect(() => {
-    const loadDailyReportUsers = () => {
-      const stored = localStorage.getItem("daily-report-users");
-      if (stored) {
-        try {
-          const users = JSON.parse(stored);
+    const loadDailyReportUsers = async () => {
+      try {
+        const response = await fetch("/api/daily-report-users");
+        if (response.ok) {
+          const users = await response.json();
           setDailyReportUsers(users);
-          // 自動選択はしない - ユーザーが明示的に選択する必要がある
-        } catch (error) {
-          console.error("Failed to load daily report users:", error);
         }
+      } catch (error) {
+        console.error("Failed to load daily report users:", error);
       }
     };
 
@@ -91,20 +90,25 @@ export function HorensoChat({ template, onComplete, onBack }: HorensoChatProps) 
 
   // 日報履歴を読み込む
   useEffect(() => {
-    const loadSavedReports = () => {
-      const stored = localStorage.getItem("saved-daily-reports");
-      if (stored) {
-        try {
-          const reports = JSON.parse(stored);
+    const loadSavedReports = async () => {
+      if (!selectedUserId) {
+        setSavedReports([]);
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/daily-reports?userId=${selectedUserId}`);
+        if (response.ok) {
+          const reports = await response.json();
           setSavedReports(reports);
-        } catch (error) {
-          console.error("Failed to load saved reports:", error);
         }
+      } catch (error) {
+        console.error("Failed to load saved reports:", error);
       }
     };
 
     loadSavedReports();
-  }, []);
+  }, [selectedUserId]);
 
   // 社員または日付が変更された時、既存の履歴があれば自動的に読み込む
   useEffect(() => {
@@ -347,8 +351,44 @@ export function HorensoChat({ template, onComplete, onBack }: HorensoChatProps) 
               setCurrentReportId(newReportId);
             }
 
-            setSavedReports(updatedReports);
-            localStorage.setItem("saved-daily-reports", JSON.stringify(updatedReports));
+            // API経由で保存
+            try {
+              const reportToSave = updatedReports.find(
+                (r) => r.userId === selectedUserId && r.reportDate === reportDate
+              );
+              if (reportToSave) {
+                const response = await fetch("/api/daily-reports", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    userId: reportToSave.userId,
+                    userName: reportToSave.userName,
+                    userDepartment: reportToSave.userDepartment,
+                    reportDate: reportToSave.reportDate,
+                    messages: reportToSave.messages,
+                    extractedData: reportToSave.extractedData,
+                  }),
+                });
+
+                if (!response.ok) {
+                  throw new Error("日報の保存に失敗しました");
+                }
+
+                const savedReport = await response.json();
+                // 保存されたIDで更新
+                updatedReports = updatedReports.map((r) =>
+                  r.userId === selectedUserId && r.reportDate === reportDate
+                    ? { ...r, id: savedReport.id }
+                    : r
+                );
+                setCurrentReportId(savedReport.id);
+              }
+              setSavedReports(updatedReports);
+            } catch (saveError) {
+              console.error("Failed to save report:", saveError);
+              // エラーでも状態は更新しておく
+              setSavedReports(updatedReports);
+            }
           }
         }
       } catch (error) {
@@ -461,7 +501,7 @@ export function HorensoChat({ template, onComplete, onBack }: HorensoChatProps) 
 
   // 日報を削除
   const handleDeleteReport = useCallback(
-    (reportId: string, event: React.MouseEvent) => {
+    async (reportId: string, event: React.MouseEvent) => {
       // イベントの伝播を停止（カード全体のクリックイベントを防ぐ）
       event.stopPropagation();
 
@@ -470,14 +510,27 @@ export function HorensoChat({ template, onComplete, onBack }: HorensoChatProps) 
         return;
       }
 
-      // 削除処理
-      const updatedReports = savedReports.filter((report) => report.id !== reportId);
-      setSavedReports(updatedReports);
-      localStorage.setItem("saved-daily-reports", JSON.stringify(updatedReports));
+      // API経由で削除
+      try {
+        const response = await fetch(`/api/daily-reports/${reportId}`, {
+          method: "DELETE",
+        });
 
-      // 削除した日報が現在開いているものだった場合、クリア
-      if (currentReportId === reportId) {
-        handleNewReport();
+        if (!response.ok) {
+          throw new Error("日報の削除に失敗しました");
+        }
+
+        // ローカル状態を更新
+        const updatedReports = savedReports.filter((report) => report.id !== reportId);
+        setSavedReports(updatedReports);
+
+        // 削除した日報が現在開いているものだった場合、クリア
+        if (currentReportId === reportId) {
+          handleNewReport();
+        }
+      } catch (error) {
+        console.error("Failed to delete report:", error);
+        alert(error instanceof Error ? error.message : "日報の削除に失敗しました");
       }
     },
     [savedReports, currentReportId, handleNewReport]

@@ -1,0 +1,57 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// 日報ユーザー（社員情報）
+model DailyReportUser {
+  id         String        @id @default(uuid())
+  name       String
+  department String
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+  reports    DailyReport[]
+}
+
+// 日報データ
+model DailyReport {
+  id             String           @id @default(uuid())
+  userId         String
+  user           DailyReportUser  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userName       String           // 非正規化（履歴用）
+  userDepartment String           // 非正規化（履歴用）
+  reportDate     String           // YYYY-MM-DD形式
+  messages       String           // JSON: Message[]
+  extractedData  String?          // JSON: Record<string, string> | null
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  @@index([userId])
+  @@index([reportDate])
+  @@unique([userId, reportDate])
+}
+
+// チャットセッション
+model ChatSession {
+  id        String   @id @default(uuid())
+  title     String
+  messages  String   // JSON: Message[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// アプリ設定
+model Settings {
+  id        Int      @id @default(autoincrement())
+  key       String   @unique
+  value     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

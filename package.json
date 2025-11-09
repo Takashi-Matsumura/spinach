@@ -13,9 +13,12 @@
     "format:check": "biome format ."
   },
   "dependencies": {
+    "@prisma/client": "^6.19.0",
     "@tailwindcss/typography": "^0.5.19",
+    "dotenv": "^17.2.3",
     "mermaid": "^11.12.1",
     "next": "15.5.4",
+    "prisma": "^6.19.0",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-icons": "^5.5.0",
