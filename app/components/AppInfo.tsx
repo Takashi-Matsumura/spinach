@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { FaArrowLeft, FaCog, FaEdit, FaMicrochip, FaSave, FaServer, FaTimes } from "react-icons/fa";
+import { FaArrowLeft, FaCog, FaEdit, FaMicrochip, FaSave, FaServer, FaTimes, FaFileAlt } from "react-icons/fa";
 import { config } from "../config";
+import { getTemplateById } from "../horenso/templates";
 
 interface ModelSpecs {
   n_params: number;
@@ -55,7 +56,7 @@ interface AppInfoProps {
 }
 
 export function AppInfo({ onBack }: AppInfoProps) {
-  const [activeTab, setActiveTab] = useState<"model" | "settings">("model");
+  const [activeTab, setActiveTab] = useState<"model" | "settings" | "templates">("model");
   const [modelInfo, setModelInfo] = useState<ModelInfoData | null>(null);
   const [settings, setSettings] = useState<BackendSettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -67,9 +68,28 @@ export function AppInfo({ onBack }: AppInfoProps) {
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [backendSaveMessage, setBackendSaveMessage] = useState<string | null>(null);
 
+  // テンプレート管理用のstate
+  const [isEditingTemplate, setIsEditingTemplate] = useState(false);
+  const [editedSystemPrompt, setEditedSystemPrompt] = useState("");
+  const [templateSaveMessage, setTemplateSaveMessage] = useState<string | null>(null);
+
   useEffect(() => {
     fetchData();
+    loadSystemPrompt();
   }, []);
+
+  // システムプロンプトを読み込む
+  const loadSystemPrompt = () => {
+    const stored = localStorage.getItem("horenso-system-prompt-daily-report");
+    if (stored) {
+      setEditedSystemPrompt(stored);
+    } else {
+      const dailyReportTemplate = getTemplateById("daily-report");
+      if (dailyReportTemplate) {
+        setEditedSystemPrompt(dailyReportTemplate.systemPrompt);
+      }
+    }
+  };
 
   const fetchData = async () => {
     setIsLoading(true);
@@ -158,6 +178,40 @@ export function AppInfo({ onBack }: AppInfoProps) {
     }
   };
 
+  // テンプレート編集開始
+  const handleEditTemplateClick = () => {
+    setIsEditingTemplate(true);
+    setTemplateSaveMessage(null);
+  };
+
+  // テンプレート編集キャンセル
+  const handleCancelTemplateEdit = () => {
+    setIsEditingTemplate(false);
+    loadSystemPrompt();
+    setTemplateSaveMessage(null);
+  };
+
+  // テンプレートを保存
+  const handleSaveTemplate = () => {
+    try {
+      localStorage.setItem("horenso-system-prompt-daily-report", editedSystemPrompt);
+      setTemplateSaveMessage("日報テンプレートを保存しました");
+      setIsEditingTemplate(false);
+    } catch (err) {
+      setTemplateSaveMessage(err instanceof Error ? err.message : "エラーが発生しました");
+    }
+  };
+
+  // テンプレートをデフォルトに戻す
+  const handleResetTemplate = () => {
+    const dailyReportTemplate = getTemplateById("daily-report");
+    if (dailyReportTemplate) {
+      setEditedSystemPrompt(dailyReportTemplate.systemPrompt);
+      localStorage.removeItem("horenso-system-prompt-daily-report");
+      setTemplateSaveMessage("デフォルトのテンプレートに戻しました");
+    }
+  };
+
   return (
     <div className="flex flex-col h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200 gradient-animate relative p-2.5">
       {/* Decorative elements */}
@@ -220,6 +274,18 @@ export function AppInfo({ onBack }: AppInfoProps) {
           >
             <FaCog />
             アプリ設定
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("templates")}
+            className={`px-6 py-2 rounded-lg font-semibold transition-all duration-200 flex items-center gap-2 ${
+              activeTab === "templates"
+                ? "bg-gray-700 text-white shadow-lg"
+                : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+            }`}
+          >
+            <FaFileAlt />
+            テンプレート
           </button>
         </div>
       </header>
@@ -575,6 +641,85 @@ export function AppInfo({ onBack }: AppInfoProps) {
                           {settings.chromadb.collection_name}
                         </p>
                       </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Templates Tab */}
+              {activeTab === "templates" && (
+                <div className="space-y-6 animate-fade-in">
+                  <div className="bg-white border-2 border-gray-200 rounded-lg p-5">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                        <FaFileAlt className="text-gray-700" />
+                        日報システムプロンプト
+                      </h3>
+                      <div className="flex gap-2">
+                        {!isEditingTemplate ? (
+                          <>
+                            <button
+                              type="button"
+                              onClick={handleResetTemplate}
+                              className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors duration-200 text-sm font-semibold flex items-center gap-2"
+                            >
+                              <FaTimes />
+                              デフォルトに戻す
+                            </button>
+                            <button
+                              type="button"
+                              onClick={handleEditTemplateClick}
+                              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 text-sm font-semibold flex items-center gap-2"
+                            >
+                              <FaEdit />
+                              編集
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button
+                              type="button"
+                              onClick={handleCancelTemplateEdit}
+                              className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors duration-200 text-sm font-semibold flex items-center gap-2"
+                            >
+                              <FaTimes />
+                              キャンセル
+                            </button>
+                            <button
+                              type="button"
+                              onClick={handleSaveTemplate}
+                              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200 text-sm font-semibold flex items-center gap-2"
+                            >
+                              <FaSave />
+                              保存
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    {templateSaveMessage && (
+                      <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                        <p className="text-sm text-green-700">{templateSaveMessage}</p>
+                      </div>
+                    )}
+
+                    <div className="space-y-2">
+                      <p className="text-sm text-gray-600">
+                        日報チャットで使用されるシステムプロンプトを編集できます。AIの振る舞いや会話の進め方を調整してください。
+                      </p>
+                      {isEditingTemplate ? (
+                        <textarea
+                          value={editedSystemPrompt}
+                          onChange={(e) => setEditedSystemPrompt(e.target.value)}
+                          className="w-full h-96 px-4 py-3 border-2 border-gray-300 rounded-lg font-mono text-sm focus:border-blue-500 focus:outline-none resize-none"
+                          placeholder="システムプロンプトを入力してください"
+                        />
+                      ) : (
+                        <pre className="w-full h-96 px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-lg font-mono text-sm overflow-auto whitespace-pre-wrap">
+                          {editedSystemPrompt}
+                        </pre>
+                      )}
                     </div>
                   </div>
                 </div>

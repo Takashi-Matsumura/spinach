@@ -7,8 +7,7 @@ import { ControlBar, type ControlBarHandle } from "./components/ControlBar";
 import { DocumentManager } from "./components/DocumentManager";
 import { AppInfo } from "./components/AppInfo";
 import { SessionSidebar } from "./components/SessionSidebar";
-import { HorensoTemplateSelector } from "./components/HorensoTemplateSelector";
-import { HorensoForm } from "./components/HorensoForm";
+import { HorensoChat } from "./components/HorensoChat";
 import { useSpeechRecognition } from "./hooks/useSpeechRecognition";
 import type { Message, HorensoTemplate, HorensoEntry } from "./types";
 import { config } from "./config";
@@ -22,7 +21,7 @@ export default function Home() {
   const [isRagEnabled, setIsRagEnabled] = useState(true);
   const [isDocManagerOpen, setIsDocManagerOpen] = useState(false);
   const [isSessionSidebarOpen, setIsSessionSidebarOpen] = useState(false);
-  const [viewMode, setViewMode] = useState<"chat" | "app-info" | "horenso-selector" | "horenso-form">("chat");
+  const [viewMode, setViewMode] = useState<"chat" | "app-info" | "horenso-form">("chat");
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
 
   // 報連相関連のstate
@@ -229,15 +228,9 @@ export default function Home() {
     [sendMessage]
   );
 
-  // 報連相テンプレート選択ハンドラー
-  const handleTemplateSelect = useCallback((template: HorensoTemplate) => {
-    setSelectedTemplate(template);
-    setViewMode("horenso-form");
-  }, []);
-
-  // 報連相フォーム送信ハンドラー
-  const handleHorensoSubmit = useCallback(
-    async (entry: HorensoEntry, promptForAI: string) => {
+  // 日報対話完了ハンドラー
+  const handleHorensoComplete = useCallback(
+    (entry: HorensoEntry) => {
       try {
         // エントリをセッションIDと紐付けて保存
         const entryWithSession = {
@@ -249,33 +242,16 @@ export default function Home() {
 
         // チャット画面に戻る
         setViewMode("chat");
+        setSelectedTemplate(null);
 
-        // テンプレートのシステムプロンプトとユーザープロンプトを組み合わせてAIに送信
-        if (selectedTemplate) {
-          // システムメッセージを追加
-          const systemMessage: Message = {
-            id: `${Date.now()}-system`,
-            role: "user",
-            content: selectedTemplate.systemPrompt,
-          };
-
-          // ユーザーの報連相内容を送信
-          const userMessage: Message = {
-            id: `${Date.now()}-user`,
-            role: "user",
-            content: promptForAI,
-          };
-
-          setMessages((prev) => [...prev, userMessage]);
-
-          // AIにリクエスト送信
-          await sendMessage(promptForAI);
-        }
+        // 保存完了メッセージを表示（オプション）
+        alert("日報を保存しました！");
       } catch (error) {
-        console.error("Failed to submit horenso:", error);
+        console.error("Failed to save horenso entry:", error);
+        alert("保存に失敗しました");
       }
     },
-    [currentSessionId, selectedTemplate, sendMessage]
+    [currentSessionId]
   );
 
   const {
@@ -345,26 +321,14 @@ export default function Home() {
     return <AppInfo onBack={() => setViewMode("chat")} />;
   }
 
-  // Show horenso template selector
-  if (viewMode === "horenso-selector") {
-    return (
-      <HorensoTemplateSelector
-        onSelectTemplate={handleTemplateSelect}
-        onClose={() => setViewMode("chat")}
-      />
-    );
-  }
-
-  // Show horenso form
+  // Show horenso chat (日報)
   if (viewMode === "horenso-form" && selectedTemplate) {
     return (
-      <div className="h-screen overflow-hidden bg-white">
-        <HorensoForm
-          template={selectedTemplate}
-          onSubmit={handleHorensoSubmit}
-          onBack={() => setViewMode("horenso-selector")}
-        />
-      </div>
+      <HorensoChat
+        template={selectedTemplate}
+        onComplete={handleHorensoComplete}
+        onBack={() => setViewMode("chat")}
+      />
     );
   }
 
@@ -405,13 +369,25 @@ export default function Home() {
               </div>
             </div>
             <div className="flex items-center gap-3">
-              {/* 報連相ボタン */}
+              {/* 日報ボタン */}
               <button
                 type="button"
-                onClick={() => setViewMode("horenso-selector")}
+                onClick={() => {
+                  const dailyReportTemplate = getTemplateById("daily-report");
+                  if (dailyReportTemplate) {
+                    // localStorageからカスタムシステムプロンプトを読み込む
+                    const customSystemPrompt = localStorage.getItem("horenso-system-prompt-daily-report");
+                    const templateToUse = customSystemPrompt
+                      ? { ...dailyReportTemplate, systemPrompt: customSystemPrompt }
+                      : dailyReportTemplate;
+
+                    setSelectedTemplate(templateToUse);
+                    setViewMode("horenso-form");
+                  }
+                }}
                 className="w-12 h-12 rounded-full bg-green-600 hover:bg-green-700 text-white flex items-center justify-center transition-all duration-300 shadow-lg hover:scale-105"
-                aria-label="報連相"
-                title="報連相テンプレート"
+                aria-label="日報"
+                title="日報を作成"
               >
                 <FaClipboardList className="text-xl" />
               </button>

@@ -9,7 +9,7 @@ export const horensoTemplates: HorensoTemplate[] = [
     id: "daily-report",
     type: "report",
     name: "日報",
-    description: "1日の業務報告を記録します",
+    description: "1日の業務報告を対話形式で作成します",
     icon: "📝",
     fields: [
       {
@@ -17,47 +17,72 @@ export const horensoTemplates: HorensoTemplate[] = [
         label: "件名",
         type: "text",
         required: true,
-        placeholder: "例: 2024年1月15日の業務報告",
+        placeholder: "",
       },
       {
         key: "progress",
         label: "進捗状況",
         type: "textarea",
         required: true,
-        placeholder: "今日の業務の進捗を記載してください",
-        description: "本日取り組んだ業務内容と進捗状況",
+        placeholder: "",
       },
       {
         key: "achievements",
         label: "成果",
         type: "textarea",
         required: true,
-        placeholder: "達成できたこと、完了したタスクを記載してください",
-        description: "具体的な成果物や達成事項",
+        placeholder: "",
       },
       {
         key: "issues",
         label: "課題・問題",
         type: "textarea",
         required: false,
-        placeholder: "発生した課題や問題点を記載してください",
-        description: "困っていることや解決が必要な問題",
+        placeholder: "",
       },
       {
         key: "nextActions",
         label: "次のアクション",
         type: "textarea",
         required: true,
-        placeholder: "明日以降の予定を記載してください",
-        description: "次に取り組む予定の業務",
+        placeholder: "",
       },
     ],
-    systemPrompt: `あなたは業務報告をサポートするAIアシスタントです。
-ユーザーから提供された日報の内容について、以下の観点でフィードバックしてください：
-- 報告内容が具体的で分かりやすいか
-- 課題に対する次のアクションが適切か
-- 上司や関係者が知るべき重要なポイント
-- より効果的な報告にするためのアドバイス`,
+    systemPrompt: `あなたは社員の日報作成をサポートする優しいAIアシスタントです。
+
+# あなたの役割
+社員が気軽に1日の業務を振り返り、自然な会話を通じて以下の情報を引き出してください：
+1. 今日取り組んだ業務内容と進捗
+2. 達成できたことや成果
+3. 困っていることや相談したいこと
+4. 明日以降の予定
+
+# 会話の進め方
+- まず「今日はお疲れ様でした！今日はどんな業務に取り組みましたか？」と優しく聞いてください
+- ユーザーの回答に対して、共感しながら深掘りしてください
+- 「困ったことはありましたか？」「何か相談したいことはありますか？」と自然に聞いてください
+- もし相談があれば、詳しく聞いて、一緒に考えてあげてください
+- 十分な情報が集まったら、「それでは今日の日報をまとめますね」と言って、次の形式で日報を提示してください
+
+# 日報の形式
+十分な情報が集まったら、以下のJSON形式で日報を提示してください：
+
+\`\`\`json
+{
+  "subject": "YYYY年MM月DD日の日報",
+  "progress": "本日取り組んだ業務内容と進捗状況",
+  "achievements": "達成できたことや完了したタスク",
+  "issues": "困っていることや課題（なければ「特になし」）",
+  "nextActions": "明日以降の予定"
+}
+\`\`\`
+
+# 重要な注意事項
+- フォーマルな言葉遣いではなく、親しみやすい話し方で会話してください
+- ユーザーが本音を話しやすい雰囲気を作ってください
+- 相談があれば、しっかり聞いてアドバイスしてください
+- 日報は会話の内容から自然にまとめてください
+- 日報を提示する際は「こちらの内容でよろしいでしょうか？修正があれば教えてください」と確認してください`,
   },
   {
     id: "weekly-report",
