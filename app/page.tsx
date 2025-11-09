@@ -1,15 +1,19 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { FaDatabase, FaHistory, FaInfoCircle, FaPlus } from "react-icons/fa";
+import { FaDatabase, FaHistory, FaInfoCircle, FaPlus, FaClipboardList } from "react-icons/fa";
 import { ChatMessage, LoadingIndicator } from "./components/ChatMessage";
 import { ControlBar, type ControlBarHandle } from "./components/ControlBar";
 import { DocumentManager } from "./components/DocumentManager";
 import { AppInfo } from "./components/AppInfo";
 import { SessionSidebar } from "./components/SessionSidebar";
+import { HorensoTemplateSelector } from "./components/HorensoTemplateSelector";
+import { HorensoForm } from "./components/HorensoForm";
 import { useSpeechRecognition } from "./hooks/useSpeechRecognition";
-import type { Message } from "./types";
+import type { Message, HorensoTemplate, HorensoEntry } from "./types";
 import { config } from "./config";
+import { saveEntry } from "./horenso/storage";
+import { getTemplateById } from "./horenso/templates";
 
 export default function Home() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -18,8 +22,13 @@ export default function Home() {
   const [isRagEnabled, setIsRagEnabled] = useState(true);
   const [isDocManagerOpen, setIsDocManagerOpen] = useState(false);
   const [isSessionSidebarOpen, setIsSessionSidebarOpen] = useState(false);
-  const [viewMode, setViewMode] = useState<"chat" | "app-info">("chat");
+  const [viewMode, setViewMode] = useState<"chat" | "app-info" | "horenso-selector" | "horenso-form">("chat");
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
+
+  // 報連相関連のstate
+  const [selectedTemplate, setSelectedTemplate] = useState<HorensoTemplate | null>(null);
+  const [currentHorensoEntry, setCurrentHorensoEntry] = useState<HorensoEntry | null>(null);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const ragLongPressTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -220,6 +229,55 @@ export default function Home() {
     [sendMessage]
   );
 
+  // 報連相テンプレート選択ハンドラー
+  const handleTemplateSelect = useCallback((template: HorensoTemplate) => {
+    setSelectedTemplate(template);
+    setViewMode("horenso-form");
+  }, []);
+
+  // 報連相フォーム送信ハンドラー
+  const handleHorensoSubmit = useCallback(
+    async (entry: HorensoEntry, promptForAI: string) => {
+      try {
+        // エントリをセッションIDと紐付けて保存
+        const entryWithSession = {
+          ...entry,
+          chatSessionId: currentSessionId || undefined,
+        };
+        saveEntry(entryWithSession);
+        setCurrentHorensoEntry(entryWithSession);
+
+        // チャット画面に戻る
+        setViewMode("chat");
+
+        // テンプレートのシステムプロンプトとユーザープロンプトを組み合わせてAIに送信
+        if (selectedTemplate) {
+          // システムメッセージを追加
+          const systemMessage: Message = {
+            id: `${Date.now()}-system`,
+            role: "user",
+            content: selectedTemplate.systemPrompt,
+          };
+
+          // ユーザーの報連相内容を送信
+          const userMessage: Message = {
+            id: `${Date.now()}-user`,
+            role: "user",
+            content: promptForAI,
+          };
+
+          setMessages((prev) => [...prev, userMessage]);
+
+          // AIにリクエスト送信
+          await sendMessage(promptForAI);
+        }
+      } catch (error) {
+        console.error("Failed to submit horenso:", error);
+      }
+    },
+    [currentSessionId, selectedTemplate, sendMessage]
+  );
+
   const {
     isRecording,
     isSupported: isSpeechSupported,
@@ -287,6 +345,29 @@ export default function Home() {
     return <AppInfo onBack={() => setViewMode("chat")} />;
   }
 
+  // Show horenso template selector
+  if (viewMode === "horenso-selector") {
+    return (
+      <HorensoTemplateSelector
+        onSelectTemplate={handleTemplateSelect}
+        onClose={() => setViewMode("chat")}
+      />
+    );
+  }
+
+  // Show horenso form
+  if (viewMode === "horenso-form" && selectedTemplate) {
+    return (
+      <div className="h-screen overflow-hidden bg-white">
+        <HorensoForm
+          template={selectedTemplate}
+          onSubmit={handleHorensoSubmit}
+          onBack={() => setViewMode("horenso-selector")}
+        />
+      </div>
+    );
+  }
+
   // Show chat screen
   return (
     <div className="flex flex-col h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200 gradient-animate relative p-2.5">
@@ -324,6 +405,17 @@ export default function Home() {
               </div>
             </div>
             <div className="flex items-center gap-3">
+              {/* 報連相ボタン */}
+              <button
+                type="button"
+                onClick={() => setViewMode("horenso-selector")}
+                className="w-12 h-12 rounded-full bg-green-600 hover:bg-green-700 text-white flex items-center justify-center transition-all duration-300 shadow-lg hover:scale-105"
+                aria-label="報連相"
+                title="報連相テンプレート"
+              >
+                <FaClipboardList className="text-xl" />
+              </button>
+
               {/* App Info button */}
               <button
                 type="button"
