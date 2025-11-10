@@ -42,6 +42,20 @@ export function ChatMessage({ message, onRepeat, showRepeat }: ChatMessageProps)
                     return <MermaidDiagram chart={codeContent} />;
                   }
 
+                  // JSONコードブロックの場合（視認性を改善）
+                  if (language === "json") {
+                    return (
+                      <div className="my-4 rounded-lg border-2 border-gray-300 bg-gray-50 p-4 shadow-sm">
+                        <div className="mb-2 text-xs font-semibold text-gray-600 uppercase">JSON</div>
+                        <pre className="overflow-x-auto">
+                          <code className="text-sm text-gray-900 font-mono whitespace-pre">
+                            {children}
+                          </code>
+                        </pre>
+                      </div>
+                    );
+                  }
+
                   // 通常のコードブロック
                   if (!inline && match) {
                     return (

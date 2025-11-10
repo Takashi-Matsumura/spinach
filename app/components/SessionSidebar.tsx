@@ -2,12 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { FaPlus, FaTimes, FaTrash } from "react-icons/fa";
+import type { Message } from "../types";
 
 interface ChatSession {
   id: string;
   title: string;
-  timestamp: number;
-  messageCount: number;
+  messages: Message[];
+  createdAt: string;
+  updatedAt: string;
 }
 
 interface SessionSidebarProps {
@@ -28,43 +30,49 @@ export function SessionSidebar({
   const [sessions, setSessions] = useState<ChatSession[]>([]);
 
   useEffect(() => {
-    loadSessions();
+    if (isOpen) {
+      loadSessions();
+    }
   }, [isOpen]);
 
-  const loadSessions = () => {
+  const loadSessions = async () => {
     try {
-      const savedSessions = localStorage.getItem("chatSessions");
-      if (savedSessions) {
-        const parsed = JSON.parse(savedSessions);
-        setSessions(parsed.sort((a: ChatSession, b: ChatSession) => b.timestamp - a.timestamp));
+      const response = await fetch("/api/chat-sessions");
+      if (response.ok) {
+        const sessions = await response.json();
+        setSessions(sessions);
       }
     } catch (error) {
       console.error("Failed to load sessions:", error);
     }
   };
 
-  const handleDeleteSession = (sessionId: string, e: React.MouseEvent) => {
+  const handleDeleteSession = async (sessionId: string, e: React.MouseEvent) => {
     e.stopPropagation();
 
+    if (!confirm("このセッションを削除してもよろしいですか？")) {
+      return;
+    }
+
     try {
-      const savedSessions = localStorage.getItem("chatSessions");
-      if (savedSessions) {
-        const parsed = JSON.parse(savedSessions);
-        const filtered = parsed.filter((s: ChatSession) => s.id !== sessionId);
-        localStorage.setItem("chatSessions", JSON.stringify(filtered));
+      const response = await fetch(`/api/chat-sessions/${sessionId}`, {
+        method: "DELETE",
+      });
 
-        // Delete session messages
-        localStorage.removeItem(`chatSession_${sessionId}`);
+      if (!response.ok) {
+        throw new Error("セッションの削除に失敗しました");
+      }
 
-        loadSessions();
+      // Reload sessions
+      await loadSessions();
 
-        // If deleted current session, create new one
-        if (sessionId === currentSessionId) {
-          onNewSession();
-        }
+      // If deleted current session, create new one
+      if (sessionId === currentSessionId) {
+        onNewSession();
       }
     } catch (error) {
       console.error("Failed to delete session:", error);
+      alert(error instanceof Error ? error.message : "セッションの削除に失敗しました");
     }
   };
 
@@ -132,14 +140,14 @@ export function SessionSidebar({
                           session.id === currentSessionId ? "text-gray-300" : "text-gray-500"
                         }`}
                       >
-                        {session.messageCount}件のメッセージ
+                        {session.messages.length}件のメッセージ
                       </p>
                       <p
                         className={`text-xs ${
                           session.id === currentSessionId ? "text-gray-400" : "text-gray-400"
                         }`}
                       >
-                        {new Date(session.timestamp).toLocaleString("ja-JP")}
+                        {new Date(session.updatedAt).toLocaleString("ja-JP")}
                       </p>
                     </div>
                     <button

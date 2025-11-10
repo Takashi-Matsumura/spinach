@@ -6,7 +6,7 @@ import { ChatMessage, LoadingIndicator } from "./ChatMessage";
 import { ControlBar, type ControlBarHandle } from "./ControlBar";
 import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
 import { config } from "../config";
-import { FaCalendarAlt, FaUser, FaBars, FaTimes, FaFileAlt, FaTrash } from "react-icons/fa";
+import { FaCalendarAlt, FaUser, FaBars, FaFileAlt, FaTrash, FaCheckCircle, FaClock, FaChevronRight } from "react-icons/fa";
 
 interface DailyReportUser {
   id: string;
@@ -182,6 +182,22 @@ export function HorensoChat({ template, onComplete, onBack }: HorensoChatProps) 
     }
     return null;
   };
+
+  // 既存のメッセージからJSONを再抽出
+  const extractJSONFromMessages = useCallback(() => {
+    // メッセージを逆順で検索（最新のJSONを優先）
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const msg = messages[i];
+      if (msg.role === "assistant") {
+        const jsonData = tryExtractJSON(msg.content);
+        if (jsonData) {
+          setExtractedData(jsonData);
+          return true;
+        }
+      }
+    }
+    return false;
+  }, [messages]);
 
   const sendMessage = useCallback(
     async (userInput: string, isInit: boolean = false) => {
@@ -625,7 +641,7 @@ export function HorensoChat({ template, onComplete, onBack }: HorensoChatProps) 
                   className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors duration-200"
                   title={isSidebarOpen ? "履歴を非表示" : "履歴を表示"}
                 >
-                  {isSidebarOpen ? <FaTimes className="text-lg" /> : <FaBars className="text-lg" />}
+                  {isSidebarOpen ? <FaChevronRight className="text-lg" /> : <FaBars className="text-lg" />}
                 </button>
               </div>
             )}
@@ -651,43 +667,75 @@ export function HorensoChat({ template, onComplete, onBack }: HorensoChatProps) 
         <div className="flex-shrink-0 relative" style={{ zIndex: 20 }}>
           <div className="bg-white/95 backdrop-blur-sm border-t-4 border-gray-300 shadow-2xl">
             <div className="px-4 py-4">
-              <div className="mx-auto flex max-w-4xl items-center justify-between gap-4">
-                <p className="text-sm text-gray-600">
-                  日報が作成されました。内容を確認して保存してください。
-                </p>
-                <div className="flex gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setExtractedData(null)}
-                    className="rounded-lg border border-gray-300 px-6 py-2 font-medium text-gray-700 hover:bg-gray-50"
-                  >
-                    修正する
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleSaveReport}
-                    className="rounded-lg bg-gray-800 px-6 py-2 font-medium text-white hover:bg-gray-900"
-                  >
-                    保存する
-                  </button>
+              <div className="mx-auto flex max-w-4xl flex-col gap-3">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-gray-800">
+                      日報が作成されました。内容を確認してください。
+                    </p>
+                    <p className="text-xs text-gray-600 mt-1">
+                      ※ 会話内容は自動的にデータベースに保存されています
+                    </p>
+                  </div>
+                  <div className="flex gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setExtractedData(null)}
+                      className="rounded-lg border border-gray-300 px-6 py-2 font-medium text-gray-700 hover:bg-gray-50"
+                    >
+                      修正する
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleSaveReport}
+                      className="rounded-lg bg-gray-800 px-6 py-2 font-medium text-white hover:bg-gray-900"
+                    >
+                      完了
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
       ) : (
-        <ControlBar
-          ref={controlBarRef}
-          input={input}
-          isLoading={isLoading}
-          isRecording={isRecording}
-          isSpeechSupported={isSpeechSupported}
-          onInputChange={setInput}
-          onSubmit={handleSubmit}
-          onStartRecording={handleRecordingStart}
-          onStopRecording={stopRecording}
-          onClear={() => {}}
-        />
+        <div className="flex-shrink-0 relative" style={{ zIndex: 20 }}>
+          {/* 日報提出ボタン（日報テンプレートでJSONが存在する場合） */}
+          {template.id === "daily-report" && messages.some(m => m.role === "assistant" && tryExtractJSON(m.content)) && (
+            <div className="bg-blue-50/95 backdrop-blur-sm border-t-2 border-blue-200">
+              <div className="px-4 py-3">
+                <div className="mx-auto flex max-w-4xl items-center justify-between gap-4">
+                  <p className="text-sm text-blue-800">
+                    日報をまとめたメッセージが見つかりました。提出して完了できます。
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!extractJSONFromMessages()) {
+                        alert("日報データが見つかりませんでした");
+                      }
+                    }}
+                    className="rounded-lg bg-blue-600 px-6 py-2 font-medium text-white hover:bg-blue-700 transition-colors"
+                  >
+                    日報を提出
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+          <ControlBar
+            ref={controlBarRef}
+            input={input}
+            isLoading={isLoading}
+            isRecording={isRecording}
+            isSpeechSupported={isSpeechSupported}
+            onInputChange={setInput}
+            onSubmit={handleSubmit}
+            onStartRecording={handleRecordingStart}
+            onStopRecording={stopRecording}
+            onClear={() => {}}
+          />
+        </div>
       )}
       </div>
 
@@ -738,9 +786,16 @@ export function HorensoChat({ template, onComplete, onBack }: HorensoChatProps) 
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-gray-800 truncate">
-                        {report.reportDate}
-                      </p>
+                      <div className="flex items-center gap-2">
+                        {report.extractedData ? (
+                          <FaCheckCircle className="text-green-600 flex-shrink-0" title="提出完了" />
+                        ) : (
+                          <FaClock className="text-yellow-600 flex-shrink-0" title="未提出" />
+                        )}
+                        <p className="font-medium text-gray-800 truncate">
+                          {report.reportDate}
+                        </p>
+                      </div>
                       <p className="text-xs text-gray-500 mt-1">
                         {new Date(report.updatedAt).toLocaleString("ja-JP")}
                       </p>
