@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import type { HorensoTemplate, HorensoType } from "../types";
 import { getAllTemplates, getTemplatesByType } from "../horenso/templates";
+import type { HorensoTemplate, HorensoType } from "../types";
 
 interface HorensoTemplateSelectorProps {
   onSelectTemplate: (template: HorensoTemplate) => void;
@@ -15,29 +15,27 @@ const typeLabels: Record<HorensoType, string> = {
   consultation: "相談",
 };
 
-const typeColors: Record<
-  HorensoType,
-  { bg: string; hover: string; border: string; text: string }
-> = {
-  report: {
-    bg: "bg-blue-50",
-    hover: "hover:bg-blue-100",
-    border: "border-blue-200",
-    text: "text-blue-700",
-  },
-  information: {
-    bg: "bg-green-50",
-    hover: "hover:bg-green-100",
-    border: "border-green-200",
-    text: "text-green-700",
-  },
-  consultation: {
-    bg: "bg-purple-50",
-    hover: "hover:bg-purple-100",
-    border: "border-purple-200",
-    text: "text-purple-700",
-  },
-};
+const typeColors: Record<HorensoType, { bg: string; hover: string; border: string; text: string }> =
+  {
+    report: {
+      bg: "bg-blue-50",
+      hover: "hover:bg-blue-100",
+      border: "border-blue-200",
+      text: "text-blue-700",
+    },
+    information: {
+      bg: "bg-green-50",
+      hover: "hover:bg-green-100",
+      border: "border-green-200",
+      text: "text-green-700",
+    },
+    consultation: {
+      bg: "bg-purple-50",
+      hover: "hover:bg-purple-100",
+      border: "border-purple-200",
+      text: "text-purple-700",
+    },
+  };
 
 export function HorensoTemplateSelector({
   onSelectTemplate,
@@ -46,8 +44,7 @@ export function HorensoTemplateSelector({
   const [selectedType, setSelectedType] = useState<HorensoType | "all">("all");
 
   const allTemplates = getAllTemplates();
-  const displayTemplates =
-    selectedType === "all" ? allTemplates : getTemplatesByType(selectedType);
+  const displayTemplates = selectedType === "all" ? allTemplates : getTemplatesByType(selectedType);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
@@ -114,18 +111,14 @@ export function HorensoTemplateSelector({
                 >
                   {/* Template Type Badge */}
                   <div className="mb-2 flex items-center justify-between">
-                    <span
-                      className={`rounded-full px-3 py-1 text-xs font-semibold ${colors.text}`}
-                    >
+                    <span className={`rounded-full px-3 py-1 text-xs font-semibold ${colors.text}`}>
                       {typeLabels[template.type]}
                     </span>
                     <span className="text-3xl">{template.icon}</span>
                   </div>
 
                   {/* Template Name */}
-                  <h3 className="mb-2 text-lg font-bold text-gray-800">
-                    {template.name}
-                  </h3>
+                  <h3 className="mb-2 text-lg font-bold text-gray-800">{template.name}</h3>
 
                   {/* Template Description */}
                   <p className="text-sm text-gray-600">{template.description}</p>

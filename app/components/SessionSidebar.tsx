@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { FaPlus, FaTimes, FaTrash } from "react-icons/fa";
 import type { Message } from "../types";
 
@@ -29,13 +29,7 @@ export function SessionSidebar({
 }: SessionSidebarProps) {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
 
-  useEffect(() => {
-    if (isOpen) {
-      loadSessions();
-    }
-  }, [isOpen]);
-
-  const loadSessions = async () => {
+  const loadSessions = useCallback(async () => {
     try {
       const response = await fetch("/api/chat-sessions");
       if (response.ok) {
@@ -45,7 +39,13 @@ export function SessionSidebar({
     } catch (error) {
       console.error("Failed to load sessions:", error);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (isOpen) {
+      loadSessions();
+    }
+  }, [isOpen, loadSessions]);
 
   const handleDeleteSession = async (sessionId: string, e: React.MouseEvent) => {
     e.stopPropagation();

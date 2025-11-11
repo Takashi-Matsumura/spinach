@@ -27,18 +27,13 @@ export async function GET(request: Request) {
     const parsedReports = reports.map((report) => ({
       ...report,
       messages: JSON.parse(report.messages),
-      extractedData: report.extractedData
-        ? JSON.parse(report.extractedData)
-        : null,
+      extractedData: report.extractedData ? JSON.parse(report.extractedData) : null,
     }));
 
     return NextResponse.json(parsedReports);
   } catch (error) {
     console.error("Error fetching reports:", error);
-    return NextResponse.json(
-      { error: "日報の取得に失敗しました" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "日報の取得に失敗しました" }, { status: 500 });
   }
 }
 
@@ -49,10 +44,7 @@ export async function POST(request: Request) {
     const { userId, userName, userDepartment, reportDate, messages, extractedData } = body;
 
     if (!userId || !userName || !userDepartment || !reportDate || !messages) {
-      return NextResponse.json(
-        { error: "必須項目が不足しています" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "必須項目が不足しています" }, { status: 400 });
     }
 
     // messagesとextractedDataをJSON文字列化
@@ -83,16 +75,16 @@ export async function POST(request: Request) {
     });
 
     // レスポンスでJSONパース
-    return NextResponse.json({
-      ...report,
-      messages: JSON.parse(report.messages),
-      extractedData: report.extractedData ? JSON.parse(report.extractedData) : null,
-    }, { status: 201 });
+    return NextResponse.json(
+      {
+        ...report,
+        messages: JSON.parse(report.messages),
+        extractedData: report.extractedData ? JSON.parse(report.extractedData) : null,
+      },
+      { status: 201 }
+    );
   } catch (error) {
     console.error("Error creating/updating report:", error);
-    return NextResponse.json(
-      { error: "日報の作成/更新に失敗しました" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "日報の作成/更新に失敗しました" }, { status: 500 });
   }
 }

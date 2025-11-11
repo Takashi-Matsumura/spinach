@@ -1,7 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { FaArrowLeft, FaCog, FaEdit, FaMicrochip, FaSave, FaServer, FaTimes, FaFileAlt, FaPlus, FaTrash, FaUser } from "react-icons/fa";
+import { useCallback, useEffect, useState } from "react";
+import {
+  FaArrowLeft,
+  FaCog,
+  FaEdit,
+  FaFileAlt,
+  FaMicrochip,
+  FaPlus,
+  FaSave,
+  FaServer,
+  FaTimes,
+  FaTrash,
+  FaUser,
+} from "react-icons/fa";
 import { config } from "../config";
 import { getTemplateById } from "../horenso/templates";
 
@@ -87,14 +99,8 @@ export function AppInfo({ onBack }: AppInfoProps) {
   const [editingUserName, setEditingUserName] = useState("");
   const [editingUserDepartment, setEditingUserDepartment] = useState("");
 
-  useEffect(() => {
-    fetchData();
-    loadSystemPrompt();
-    loadDailyReportUsers();
-  }, []);
-
   // システムプロンプトを読み込む
-  const loadSystemPrompt = async () => {
+  const loadSystemPrompt = useCallback(async () => {
     try {
       const response = await fetch("/api/settings");
       if (response.ok) {
@@ -114,9 +120,9 @@ export function AppInfo({ onBack }: AppInfoProps) {
     if (dailyReportTemplate) {
       setEditedSystemPrompt(dailyReportTemplate.systemPrompt);
     }
-  };
+  }, []);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
@@ -141,7 +147,26 @@ export function AppInfo({ onBack }: AppInfoProps) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
+
+  // 日報ユーザを読み込む
+  const loadDailyReportUsers = useCallback(async () => {
+    try {
+      const response = await fetch("/api/daily-report-users");
+      if (response.ok) {
+        const users = await response.json();
+        setDailyReportUsers(users);
+      }
+    } catch (error) {
+      console.error("Failed to load daily report users:", error);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+    loadSystemPrompt();
+    loadDailyReportUsers();
+  }, [fetchData, loadDailyReportUsers, loadSystemPrompt]);
 
   const handleEditClick = () => {
     setIsEditing(true);
@@ -258,19 +283,6 @@ export function AppInfo({ onBack }: AppInfoProps) {
         console.error("Failed to reset template:", error);
         setTemplateSaveMessage("デフォルトのテンプレートに戻しました（保存は失敗）");
       }
-    }
-  };
-
-  // 日報ユーザを読み込む
-  const loadDailyReportUsers = async () => {
-    try {
-      const response = await fetch("/api/daily-report-users");
-      if (response.ok) {
-        const users = await response.json();
-        setDailyReportUsers(users);
-      }
-    } catch (error) {
-      console.error("Failed to load daily report users:", error);
     }
   };
 
@@ -732,13 +744,17 @@ export function AppInfo({ onBack }: AppInfoProps) {
                         <p className="text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide">
                           モデル
                         </p>
-                        <p className="text-sm font-mono text-gray-900">{settings.embeddings.model}</p>
+                        <p className="text-sm font-mono text-gray-900">
+                          {settings.embeddings.model}
+                        </p>
                       </div>
                       <div className="bg-gray-50 rounded-lg p-4">
                         <p className="text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide">
                           デバイス
                         </p>
-                        <p className="text-sm font-mono text-gray-900">{settings.embeddings.device}</p>
+                        <p className="text-sm font-mono text-gray-900">
+                          {settings.embeddings.device}
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -771,7 +787,9 @@ export function AppInfo({ onBack }: AppInfoProps) {
                         <p className="text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide">
                           チャンクオーバーラップ
                         </p>
-                        <p className="text-sm font-mono text-gray-900">{settings.rag.chunk_overlap}</p>
+                        <p className="text-sm font-mono text-gray-900">
+                          {settings.rag.chunk_overlap}
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -895,8 +913,12 @@ export function AppInfo({ onBack }: AppInfoProps) {
                                           onClick={handleSaveEditUser}
                                           className="p-2 text-white rounded-lg transition-colors duration-200"
                                           style={{ backgroundColor: "#1f2937" }}
-                                          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#111827")}
-                                          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#1f2937")}
+                                          onMouseEnter={(e) =>
+                                            (e.currentTarget.style.backgroundColor = "#111827")
+                                          }
+                                          onMouseLeave={(e) =>
+                                            (e.currentTarget.style.backgroundColor = "#1f2937")
+                                          }
                                           title="保存"
                                         >
                                           <FaSave className="text-sm" />
@@ -914,7 +936,9 @@ export function AppInfo({ onBack }: AppInfoProps) {
                                   </>
                                 ) : (
                                   <>
-                                    <td className="px-4 py-3 text-sm text-gray-900 w-[30%]">{user.name}</td>
+                                    <td className="px-4 py-3 text-sm text-gray-900 w-[30%]">
+                                      {user.name}
+                                    </td>
                                     <td className="px-4 py-3 text-sm text-gray-900 w-[30%]">
                                       {user.department}
                                     </td>
@@ -925,8 +949,12 @@ export function AppInfo({ onBack }: AppInfoProps) {
                                           onClick={() => handleStartEditUser(user)}
                                           className="p-2 text-white rounded-lg transition-colors duration-200"
                                           style={{ backgroundColor: "#374151" }}
-                                          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#1f2937")}
-                                          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#374151")}
+                                          onMouseEnter={(e) =>
+                                            (e.currentTarget.style.backgroundColor = "#1f2937")
+                                          }
+                                          onMouseLeave={(e) =>
+                                            (e.currentTarget.style.backgroundColor = "#374151")
+                                          }
                                           title="編集"
                                         >
                                           <FaEdit className="text-sm" />

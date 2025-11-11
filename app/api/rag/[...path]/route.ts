@@ -3,7 +3,7 @@ import { type NextRequest, NextResponse } from "next/server";
 const RAG_BACKEND_URL = process.env.RAG_BACKEND_URL || "http://localhost:8000";
 
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ path: string[] }> }
 ) {
   const { path } = await params;
@@ -80,7 +80,7 @@ export async function POST(
 }
 
 export async function DELETE(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ path: string[] }> }
 ) {
   const { path } = await params;

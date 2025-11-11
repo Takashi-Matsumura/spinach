@@ -2,11 +2,11 @@
 
 import { useState } from "react";
 import type {
-  HorensoTemplate,
-  HorensoEntry,
-  ReportData,
-  InformationData,
   ConsultationData,
+  HorensoEntry,
+  HorensoTemplate,
+  InformationData,
+  ReportData,
 } from "../types";
 
 interface HorensoFormProps {
@@ -79,7 +79,7 @@ export function HorensoForm({ template, onSubmit, onBack }: HorensoFormProps) {
       type: template.type,
       templateId: template.id,
       createdAt: new Date().toISOString(),
-      data: formData as ReportData | InformationData | ConsultationData,
+      data: formData as unknown as ReportData | InformationData | ConsultationData,
     };
 
     // AIプロンプトを生成
@@ -98,12 +98,7 @@ export function HorensoForm({ template, onSubmit, onBack }: HorensoFormProps) {
             onClick={onBack}
             className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700"
           >
-            <svg
-              className="h-6 w-6"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
+            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"

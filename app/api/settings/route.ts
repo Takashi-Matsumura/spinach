@@ -11,18 +11,18 @@ export async function GET() {
     });
 
     // key-valueオブジェクトに変換
-    const settingsObj = settings.reduce((acc, setting) => {
-      acc[setting.key] = setting.value;
-      return acc;
-    }, {} as Record<string, string>);
+    const settingsObj = settings.reduce(
+      (acc, setting) => {
+        acc[setting.key] = setting.value;
+        return acc;
+      },
+      {} as Record<string, string>
+    );
 
     return NextResponse.json(settingsObj);
   } catch (error) {
     console.error("Error fetching settings:", error);
-    return NextResponse.json(
-      { error: "設定の取得に失敗しました" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "設定の取得に失敗しました" }, { status: 500 });
   }
 }
 
@@ -45,9 +45,6 @@ export async function PUT(request: Request) {
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Error updating settings:", error);
-    return NextResponse.json(
-      { error: "設定の更新に失敗しました" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "設定の更新に失敗しました" }, { status: 500 });
   }
 }

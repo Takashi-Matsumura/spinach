@@ -12,10 +12,7 @@ export async function GET() {
     return NextResponse.json(users);
   } catch (error) {
     console.error("Error fetching users:", error);
-    return NextResponse.json(
-      { error: "ユーザーの取得に失敗しました" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "ユーザーの取得に失敗しました" }, { status: 500 });
   }
 }
 
@@ -26,10 +23,7 @@ export async function POST(request: Request) {
     const { name, department } = body;
 
     if (!name || !department) {
-      return NextResponse.json(
-        { error: "社員名と部署名は必須です" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "社員名と部署名は必須です" }, { status: 400 });
     }
 
     const user = await prisma.dailyReportUser.create({
@@ -42,9 +36,6 @@ export async function POST(request: Request) {
     return NextResponse.json(user, { status: 201 });
   } catch (error) {
     console.error("Error creating user:", error);
-    return NextResponse.json(
-      { error: "ユーザーの作成に失敗しました" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "ユーザーの作成に失敗しました" }, { status: 500 });
   }
 }

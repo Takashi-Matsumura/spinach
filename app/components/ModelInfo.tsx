@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { FaArrowLeft, FaMicrochip, FaServer } from "react-icons/fa";
 import { config } from "../config";
 
@@ -31,11 +31,7 @@ export function ModelInfo({ onBack }: ModelInfoProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchModelInfo();
-  }, []);
-
-  const fetchModelInfo = async () => {
+  const fetchModelInfo = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
@@ -50,7 +46,11 @@ export function ModelInfo({ onBack }: ModelInfoProps) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchModelInfo();
+  }, [fetchModelInfo]);
 
   return (
     <div className="flex flex-col h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200 gradient-animate relative p-2.5">

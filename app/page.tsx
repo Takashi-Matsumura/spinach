@@ -1,18 +1,18 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { FaDatabase, FaHistory, FaInfoCircle, FaPlus, FaClipboardList } from "react-icons/fa";
+import { FaClipboardList, FaDatabase, FaHistory, FaInfoCircle, FaPlus } from "react-icons/fa";
+import { AppInfo } from "./components/AppInfo";
 import { ChatMessage, LoadingIndicator } from "./components/ChatMessage";
 import { ControlBar, type ControlBarHandle } from "./components/ControlBar";
 import { DocumentManager } from "./components/DocumentManager";
-import { AppInfo } from "./components/AppInfo";
-import { SessionSidebar } from "./components/SessionSidebar";
 import { HorensoChat } from "./components/HorensoChat";
-import { useSpeechRecognition } from "./hooks/useSpeechRecognition";
-import type { Message, HorensoTemplate, HorensoEntry } from "./types";
+import { SessionSidebar } from "./components/SessionSidebar";
 import { config } from "./config";
+import { useSpeechRecognition } from "./hooks/useSpeechRecognition";
 import { saveEntry } from "./horenso/storage";
 import { getTemplateById } from "./horenso/templates";
+import type { HorensoEntry, HorensoTemplate, Message } from "./types";
 
 export default function Home() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -26,7 +26,7 @@ export default function Home() {
 
   // 報連相関連のstate
   const [selectedTemplate, setSelectedTemplate] = useState<HorensoTemplate | null>(null);
-  const [currentHorensoEntry, setCurrentHorensoEntry] = useState<HorensoEntry | null>(null);
+  const [_currentHorensoEntry, setCurrentHorensoEntry] = useState<HorensoEntry | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
@@ -171,7 +171,7 @@ export default function Home() {
                 try {
                   const parsed = JSON.parse(data);
 
-                  if (parsed.choices && parsed.choices[0]) {
+                  if (parsed.choices?.[0]) {
                     const content = parsed.choices[0]?.delta?.content || "";
                     if (content) {
                       assistantMessage += content;

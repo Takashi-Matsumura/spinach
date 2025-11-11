@@ -19,10 +19,7 @@ export async function GET() {
     return NextResponse.json(parsedSessions);
   } catch (error) {
     console.error("Error fetching sessions:", error);
-    return NextResponse.json(
-      { error: "セッションの取得に失敗しました" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "セッションの取得に失敗しました" }, { status: 500 });
   }
 }
 
@@ -33,10 +30,7 @@ export async function POST(request: Request) {
     const { id, title, messages } = body;
 
     if (!title || !messages) {
-      return NextResponse.json(
-        { error: "タイトルとメッセージは必須です" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "タイトルとメッセージは必須です" }, { status: 400 });
     }
 
     // messagesをJSON文字列化
@@ -64,15 +58,15 @@ export async function POST(request: Request) {
         });
 
     // レスポンスでJSONパース
-    return NextResponse.json({
-      ...session,
-      messages: JSON.parse(session.messages),
-    }, { status: 201 });
+    return NextResponse.json(
+      {
+        ...session,
+        messages: JSON.parse(session.messages),
+      },
+      { status: 201 }
+    );
   } catch (error) {
     console.error("Error creating/updating session:", error);
-    return NextResponse.json(
-      { error: "セッションの作成/更新に失敗しました" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "セッションの作成/更新に失敗しました" }, { status: 500 });
   }
 }

@@ -26,7 +26,7 @@ export const ControlBar = forwardRef<ControlBarHandle, ControlBarProps>(function
     onSubmit,
     onStartRecording,
     onStopRecording,
-    onClear,
+    onClear: _onClear,
   },
   ref
 ) {

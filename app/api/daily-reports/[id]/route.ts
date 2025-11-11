@@ -2,10 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 // GET: 日報詳細取得
-export async function GET(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
 
@@ -14,34 +11,23 @@ export async function GET(
     });
 
     if (!report) {
-      return NextResponse.json(
-        { error: "日報が見つかりません" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "日報が見つかりません" }, { status: 404 });
     }
 
     // messagesとextractedDataをJSONパース
     return NextResponse.json({
       ...report,
       messages: JSON.parse(report.messages),
-      extractedData: report.extractedData
-        ? JSON.parse(report.extractedData)
-        : null,
+      extractedData: report.extractedData ? JSON.parse(report.extractedData) : null,
     });
   } catch (error) {
     console.error("Error fetching report:", error);
-    return NextResponse.json(
-      { error: "日報の取得に失敗しました" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "日報の取得に失敗しました" }, { status: 500 });
   }
 }
 
 // PUT: 日報更新
-export async function PUT(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
     const body = await request.json();
@@ -71,24 +57,16 @@ export async function PUT(
     return NextResponse.json({
       ...report,
       messages: JSON.parse(report.messages),
-      extractedData: report.extractedData
-        ? JSON.parse(report.extractedData)
-        : null,
+      extractedData: report.extractedData ? JSON.parse(report.extractedData) : null,
     });
   } catch (error) {
     console.error("Error updating report:", error);
-    return NextResponse.json(
-      { error: "日報の更新に失敗しました" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "日報の更新に失敗しました" }, { status: 500 });
   }
 }
 
 // DELETE: 日報削除
-export async function DELETE(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function DELETE(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
 
@@ -99,9 +77,6 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Error deleting report:", error);
-    return NextResponse.json(
-      { error: "日報の削除に失敗しました" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "日報の削除に失敗しました" }, { status: 500 });
   }
 }
