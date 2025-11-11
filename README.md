@@ -52,6 +52,12 @@ Spinachは、ローカルLLMとRAGを組み合わせたWebアプリケーショ�
 - **Sentence Transformers** 3.3.1 - 埋め込みモデル
 - **llama.cpp** - LLM推論エンジン（外部サービス）
 
+### インフラ
+- **Docker** - コンテナ化
+- **Docker Compose** - マルチコンテナ管理
+- **Node 20 Alpine** - フロントエンドコンテナベースイメージ
+- **Python 3.11 Slim** - バックエンドコンテナベースイメージ
+
 ### データベース
 - **開発環境**: SQLite（Prisma経由）
 - **本番環境**: PostgreSQL（推奨）
@@ -83,14 +89,78 @@ llama-server \
 
 ## セットアップ
 
-### 1. リポジトリのクローン
+### 方法1: Docker を使用（推奨）
+
+Dockerを使用すると、依存関係のインストールや環境構築を簡単に行えます。
+
+#### 前提条件
+- **Docker Desktop** がインストールされ、起動していること
+- **llama.cpp サーバー** が起動していること（`http://localhost:8080`）
+
+#### 手順
+
+```bash
+# リポジトリのクローン
+git clone <repository-url>
+cd spinach
+
+# 環境変数ファイルの作成（必要に応じて編集）
+# .env ファイル（Prisma用）
+cat > .env << 'EOF'
+DATABASE_URL="file:./dev.db"
+EOF
+
+# .env.local ファイル（オプション）
+cat > .env.local << 'EOF'
+NEXT_PUBLIC_BACKEND_URL=http://localhost:8000
+NEXT_PUBLIC_APP_NAME=Spinach
+NEXT_PUBLIC_APP_VERSION=0.1.0
+DATABASE_URL="file:./dev.db"
+EOF
+
+# backend/.env ファイル（必要に応じて編集）
+cat > backend/.env << 'EOF'
+LM_STUDIO_BASE_URL=http://host.docker.internal:8080/v1
+LM_STUDIO_MODEL=/path/to/your/model.gguf
+CHROMA_PERSIST_DIR=/app/chroma_data
+EMBEDDING_MODEL=intfloat/multilingual-e5-base
+RAG_TOP_K=3
+RAG_SIMILARITY_THRESHOLD=0.5
+CORS_ORIGINS=http://localhost:3000,https://localhost:3000
+EOF
+
+# Dockerコンテナのビルドと起動
+docker-compose up -d --build
+
+# ログの確認
+docker-compose logs -f
+
+# コンテナの停止
+docker-compose down
+```
+
+#### アクセス
+- **フロントエンド**: http://localhost:3000
+- **バックエンドAPI**: http://localhost:8000
+- **ヘルスチェック**:
+  - フロントエンド: http://localhost:3000/api/health
+  - バックエンド: http://localhost:8000/health
+
+#### 注意事項
+- **MacまたはWindows**: `backend/.env`の`LM_STUDIO_BASE_URL`は`http://host.docker.internal:8080/v1`を使用してください（ホストマシンのllama.cppサーバーにアクセスするため）
+- **Linux**: `http://172.17.0.1:8080/v1`を使用するか、`docker-compose.yml`のネットワーク設定を調整してください
+- 初回起動時は埋め込みモデルのダウンロードに時間がかかる場合があります
+
+### 方法2: ローカルセットアップ
+
+#### 1. リポジトリのクローン
 
 ```bash
 git clone <repository-url>
 cd spinach
 ```
 
-### 2. フロントエンドのセットアップ
+#### 2. フロントエンドのセットアップ
 
 ```bash
 # 依存パッケージのインストール
@@ -127,7 +197,7 @@ npm run dev
 
 フロントエンドは `http://localhost:3000` で起動します。
 
-### 3. バックエンドのセットアップ
+#### 3. バックエンドのセットアップ
 
 ```bash
 cd backend
@@ -145,9 +215,9 @@ python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 
 バックエンドは `http://localhost:8000` で起動します。
 
-### 4. 環境変数の設定（オプション）
+#### 4. 環境変数の設定（オプション）
 
-#### フロントエンド（`.env.local`）
+##### フロントエンド（`.env.local`）
 
 プロジェクトルートに `.env.local` ファイルを作成：
 
@@ -162,7 +232,7 @@ NEXT_PUBLIC_APP_VERSION=0.1.0
 
 **注意**: バックエンドURLとLLMサーバURLは、アプリの「アプリ情報」画面から実行時に変更できます。
 
-#### バックエンド（`backend/.env`）
+##### バックエンド（`backend/.env`）
 
 バックエンドディレクトリに `.env` ファイルを作成：
 
@@ -300,6 +370,10 @@ spinach/
 │   ├── vectordb.py           # ChromaDB管理
 │   └── main.py               # FastAPIアプリケーション
 ├── public/                   # 静的ファイル
+├── Dockerfile                # フロントエンド用Dockerイメージ定義
+├── backend/
+│   └── Dockerfile            # バックエンド用Dockerイメージ定義
+├── docker-compose.yml        # Docker Compose設定
 ├── package.json              # Node.js依存関係
 ├── requirements.txt          # Python依存関係
 ├── prisma.config.ts          # Prisma設定
@@ -309,6 +383,39 @@ spinach/
 ```
 
 ## 開発
+
+### Docker コマンド
+
+```bash
+# コンテナの起動（バックグラウンド）
+docker-compose up -d
+
+# コンテナの起動（フォアグラウンド・ログ表示）
+docker-compose up
+
+# コンテナの再ビルドと起動
+docker-compose up -d --build
+
+# コンテナの停止
+docker-compose down
+
+# コンテナの停止とボリューム削除
+docker-compose down -v
+
+# ログの確認
+docker-compose logs -f
+
+# 特定のサービスのログ確認
+docker-compose logs -f frontend
+docker-compose logs -f backend
+
+# コンテナの状態確認
+docker-compose ps
+
+# コンテナ内でコマンド実行
+docker-compose exec frontend sh
+docker-compose exec backend bash
+```
 
 ### コードチェックとフォーマット
 
@@ -329,11 +436,14 @@ npm run format:check
 ### ビルド
 
 ```bash
-# プロダクションビルド
+# プロダクションビルド（ローカル）
 npm run build
 
-# プロダクションサーバー起動
+# プロダクションサーバー起動（ローカル）
 npm start
+
+# Dockerイメージのビルドのみ
+docker-compose build
 ```
 
 ### APIエンドポイント

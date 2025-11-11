@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
+export const dynamic = 'force-dynamic';
+
 // GET: 全セッション取得
 export async function GET() {
   try {
@@ -11,7 +13,7 @@ export async function GET() {
     });
 
     // messagesをJSONパース
-    const parsedSessions = sessions.map((session) => ({
+    const parsedSessions = sessions.map((session: typeof sessions[number]) => ({
       ...session,
       messages: JSON.parse(session.messages),
     }));

@@ -17,6 +17,10 @@ COPY . .
 # 環境変数を設定
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
+ENV DATABASE_URL="file:./dev.db"
+
+# Prismaクライアントを生成
+RUN npx prisma generate
 
 # Next.jsアプリをビルド
 RUN npm run build

@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
+export const dynamic = 'force-dynamic';
+
 // GET: 日報取得（オプションでuserIdとreportDateでフィルタ）
 export async function GET(request: Request) {
   try {
@@ -24,7 +26,7 @@ export async function GET(request: Request) {
     });
 
     // messagesとextractedDataをJSONパース
-    const parsedReports = reports.map((report) => ({
+    const parsedReports = reports.map((report: typeof reports[number]) => ({
       ...report,
       messages: JSON.parse(report.messages),
       extractedData: report.extractedData ? JSON.parse(report.extractedData) : null,

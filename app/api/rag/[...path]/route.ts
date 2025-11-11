@@ -1,5 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 
+export const dynamic = 'force-dynamic';
+
 const RAG_BACKEND_URL = process.env.RAG_BACKEND_URL || "http://localhost:8000";
 
 export async function GET(

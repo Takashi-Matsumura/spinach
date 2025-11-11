@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
+export const dynamic = 'force-dynamic';
+
 // GET: セッション詳細取得
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {

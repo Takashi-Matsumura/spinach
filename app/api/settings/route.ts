@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
+export const dynamic = 'force-dynamic';
+
 // GET: 全設定取得
 export async function GET() {
   try {
@@ -11,12 +13,12 @@ export async function GET() {
     });
 
     // key-valueオブジェクトに変換
-    const settingsObj = settings.reduce(
-      (acc, setting) => {
+    const settingsObj: Record<string, string> = settings.reduce(
+      (acc: Record<string, string>, setting: typeof settings[number]) => {
         acc[setting.key] = setting.value;
         return acc;
       },
-      {} as Record<string, string>
+      {}
     );
 
     return NextResponse.json(settingsObj);
