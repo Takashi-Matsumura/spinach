@@ -19,9 +19,8 @@ export default function Home() {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isRagEnabled, setIsRagEnabled] = useState(true);
-  const [isDocManagerOpen, setIsDocManagerOpen] = useState(false);
   const [isSessionSidebarOpen, setIsSessionSidebarOpen] = useState(false);
-  const [viewMode, setViewMode] = useState<"chat" | "app-info" | "horenso-form">("chat");
+  const [viewMode, setViewMode] = useState<"chat" | "app-info" | "horenso-form" | "document-manager">("chat");
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
 
   // 報連相関連のstate
@@ -32,6 +31,7 @@ export default function Home() {
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const ragLongPressTimerRef = useRef<NodeJS.Timeout | null>(null);
   const controlBarRef = useRef<ControlBarHandle>(null);
+  const autoSubmitRef = useRef(true); // 録音停止後の自動送信フラグ
 
   const handleTranscript = useCallback((text: string) => {
     setInput(text);
@@ -210,9 +210,17 @@ export default function Home() {
   const handleRecognitionEnd = useCallback(
     (finalTranscript: string) => {
       if (finalTranscript) {
-        sendMessage(finalTranscript);
-        setInput("");
+        if (autoSubmitRef.current) {
+          // タッチデバイス: 自動送信
+          sendMessage(finalTranscript);
+          setInput("");
+        } else {
+          // PC (マウス): inputにセットするだけ (手動送信)
+          setInput(finalTranscript);
+        }
       }
+      // フラグをリセット (デフォルトはtrue)
+      autoSubmitRef.current = true;
     },
     [sendMessage]
   );
@@ -266,13 +274,34 @@ export default function Home() {
     startRecording();
   };
 
+  const handleRecordingStop = (autoSubmit: boolean) => {
+    autoSubmitRef.current = autoSubmit;
+    stopRecording();
+  };
+
+  // コンテキストウィンドウの使用率を計算
+  const calculateContextUsage = useCallback(() => {
+    const MAX_CONTEXT_TOKENS = 8192; // ローカルLLMの一般的なコンテキストサイズ
+
+    // メッセージの合計文字数を計算
+    const totalChars = messages.reduce((sum, msg) => sum + msg.content.length, 0);
+
+    // 簡易的なトークン数推定（日本語・英語混在を考慮して1文字=2.5トークン程度）
+    const estimatedTokens = Math.floor(totalChars * 2.5);
+
+    // 使用率を計算（0-100%）
+    const usagePercent = Math.min(100, (estimatedTokens / MAX_CONTEXT_TOKENS) * 100);
+
+    return usagePercent;
+  }, [messages]);
+
   const isLongPress = useRef(false);
 
   const handleRagMouseDown = () => {
     isLongPress.current = false;
     ragLongPressTimerRef.current = setTimeout(() => {
       isLongPress.current = true;
-      setIsDocManagerOpen(true);
+      setViewMode("document-manager");
     }, 500);
   };
 
@@ -308,6 +337,11 @@ export default function Home() {
   // Show app info screen
   if (viewMode === "app-info") {
     return <AppInfo onBack={() => setViewMode("chat")} />;
+  }
+
+  // Show document manager (RAG管理)
+  if (viewMode === "document-manager") {
+    return <DocumentManager onBack={() => setViewMode("chat")} />;
   }
 
   // Show horenso chat (日報)
@@ -393,16 +427,6 @@ export default function Home() {
                 <FaClipboardList className="text-xl" />
               </button>
 
-              {/* App Info button */}
-              <button
-                type="button"
-                onClick={() => setViewMode("app-info")}
-                className="w-12 h-12 rounded-full bg-gray-700 hover:bg-gray-800 text-white flex items-center justify-center transition-all duration-300 shadow-lg hover:scale-105"
-                aria-label="アプリ情報"
-              >
-                <FaInfoCircle className="text-xl" />
-              </button>
-
               {/* RAG toggle button */}
               <button
                 type="button"
@@ -421,16 +445,15 @@ export default function Home() {
                 <FaDatabase className="text-xl" />
               </button>
 
-              {messages.length > 0 && (
-                <button
-                  type="button"
-                  onClick={handleClear}
-                  className="w-12 h-12 rounded-full bg-gray-700 hover:bg-gray-800 text-white flex items-center justify-center transition-all duration-300 shadow-lg hover:scale-105"
-                  aria-label="チャットをクリア"
-                >
-                  <FaPlus className="text-xl" />
-                </button>
-              )}
+              {/* App Info button */}
+              <button
+                type="button"
+                onClick={() => setViewMode("app-info")}
+                className="w-12 h-12 rounded-full bg-gray-700 hover:bg-gray-800 text-white flex items-center justify-center transition-all duration-300 shadow-lg hover:scale-105"
+                aria-label="アプリ情報"
+              >
+                <FaInfoCircle className="text-xl" />
+              </button>
             </div>
           </div>
         </div>
@@ -473,15 +496,13 @@ export default function Home() {
         isLoading={isLoading}
         isRecording={isRecording}
         isSpeechSupported={isSpeechSupported}
+        contextUsage={calculateContextUsage()}
         onInputChange={setInput}
         onSubmit={handleSubmit}
         onStartRecording={handleRecordingStart}
-        onStopRecording={stopRecording}
+        onStopRecording={handleRecordingStop}
         onClear={handleClear}
       />
-
-      {/* Document Manager Modal */}
-      <DocumentManager isOpen={isDocManagerOpen} onClose={() => setIsDocManagerOpen(false)} />
 
       {/* Session Sidebar */}
       <SessionSidebar

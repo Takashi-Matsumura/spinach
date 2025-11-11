@@ -55,11 +55,10 @@ interface ModelStatus {
 }
 
 interface DocumentManagerProps {
-  isOpen: boolean;
-  onClose: () => void;
+  onBack: () => void;
 }
 
-export function DocumentManager({ isOpen, onClose }: DocumentManagerProps) {
+export function DocumentManager({ onBack }: DocumentManagerProps) {
   const instanceId = useId();
   const [documents, setDocuments] = useState<DocumentInfo[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -89,14 +88,6 @@ export function DocumentManager({ isOpen, onClose }: DocumentManagerProps) {
 
   // 検索機能用の状態
   const [searchQuery, setSearchQuery] = useState<string>("");
-
-  // ドラッグ&ドロップとリサイズ用の状態
-  const [position, setPosition] = useState({ x: 0, y: 0 });
-  const [size, setSize] = useState({ width: 900, height: 700 });
-  const [isDragging, setIsDragging] = useState(false);
-  const [isResizing, setIsResizing] = useState(false);
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-  const [resizeStart, setResizeStart] = useState({ x: 0, y: 0, width: 0, height: 0 });
 
   // ドキュメント一覧を取得
   const fetchDocuments = useCallback(async () => {
@@ -162,27 +153,15 @@ export function DocumentManager({ isOpen, onClose }: DocumentManagerProps) {
   }, []);
 
   useEffect(() => {
-    if (isOpen) {
-      fetchDocuments();
-      fetchStats();
-      fetchTemplates();
-      fetchModelStatus();
-      // モーダルを開いたときにビューをリセット
-      setViewingDocument(null);
-      setDocumentContent(null);
-      setIsTextMode(false);
-      setEditorText("");
-      setEditorFilename("");
-      setSelectedTemplate("");
-      // ポジションを中央に
-      setPosition({ x: 0, y: 0 });
-      setSize({ width: 900, height: 700 });
-    }
-  }, [isOpen, fetchDocuments, fetchStats, fetchTemplates, fetchModelStatus]);
+    fetchDocuments();
+    fetchStats();
+    fetchTemplates();
+    fetchModelStatus();
+  }, [fetchDocuments, fetchStats, fetchTemplates, fetchModelStatus]);
 
   // モデルステータスのポーリング（準備中の場合のみ）
   useEffect(() => {
-    if (!isOpen || !modelStatus) return;
+    if (!modelStatus) return;
 
     // モデルがまだ準備中の場合は2秒ごとにポーリング
     if (
@@ -196,59 +175,7 @@ export function DocumentManager({ isOpen, onClose }: DocumentManagerProps) {
 
       return () => clearInterval(intervalId);
     }
-  }, [isOpen, modelStatus, fetchModelStatus]);
-
-  // ドラッグ開始
-  const handleDragStart = (e: React.MouseEvent) => {
-    setIsDragging(true);
-    setDragStart({
-      x: e.clientX - position.x,
-      y: e.clientY - position.y,
-    });
-  };
-
-  // リサイズ開始
-  const handleResizeStart = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setIsResizing(true);
-    setResizeStart({
-      x: e.clientX,
-      y: e.clientY,
-      width: size.width,
-      height: size.height,
-    });
-  };
-
-  // マウス移動
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (isDragging) {
-        setPosition({
-          x: e.clientX - dragStart.x,
-          y: e.clientY - dragStart.y,
-        });
-      }
-      if (isResizing) {
-        const newWidth = Math.max(600, resizeStart.width + (e.clientX - resizeStart.x));
-        const newHeight = Math.max(500, resizeStart.height + (e.clientY - resizeStart.y));
-        setSize({ width: newWidth, height: newHeight });
-      }
-    };
-
-    const handleMouseUp = () => {
-      setIsDragging(false);
-      setIsResizing(false);
-    };
-
-    if (isDragging || isResizing) {
-      document.addEventListener("mousemove", handleMouseMove);
-      document.addEventListener("mouseup", handleMouseUp);
-      return () => {
-        document.removeEventListener("mousemove", handleMouseMove);
-        document.removeEventListener("mouseup", handleMouseUp);
-      };
-    }
-  }, [isDragging, isResizing, dragStart, resizeStart]);
+  }, [modelStatus, fetchModelStatus]);
 
   // ドキュメント内容を取得
   const fetchDocumentContent = async (filename: string) => {
@@ -446,60 +373,64 @@ export function DocumentManager({ isOpen, onClose }: DocumentManagerProps) {
     }
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div className="flex flex-col h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200 gradient-animate relative p-2.5">
+      {/* Decorative elements */}
       <div
-        className="bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col"
-        style={{
-          width: `${size.width}px`,
-          height: `${size.height}px`,
-          transform: `translate(${position.x}px, ${position.y}px)`,
-          position: "relative",
-        }}
+        className="fixed top-0 left-0 w-96 h-96 bg-gray-200/30 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2 pointer-events-none"
+        style={{ zIndex: 0 }}
+      />
+      <div
+        className="fixed bottom-0 right-0 w-96 h-96 bg-gray-300/30 rounded-full blur-3xl translate-x-1/2 translate-y-1/2 pointer-events-none"
+        style={{ zIndex: 0 }}
+      />
+
+      {/* ヘッダー */}
+      <header
+        className="flex-shrink-0 bg-white/95 backdrop-blur-sm border-b-4 border-gray-300 relative shadow-2xl"
+        style={{ zIndex: 30 }}
       >
-        {/* ヘッダー（ドラッグ可能） */}
-        <div
-          className="bg-gradient-to-r from-gray-700 to-gray-800 px-6 py-4 flex items-center justify-between cursor-move select-none"
-          onMouseDown={handleDragStart}
-          role="button"
-          aria-label="ドラッグ可能なヘッダー"
-          tabIndex={0}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") {
-              e.preventDefault();
-            }
-          }}
-        >
-          <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-            <FaDatabase />
-            RAG管理
-          </h2>
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-white hover:bg-white/20 rounded-full p-2 transition-all"
-            aria-label="閉じる"
-            onMouseDown={(e) => e.stopPropagation()}
-          >
-            <svg
-              className="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              role="img"
-              aria-label="閉じるアイコン"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
-          </button>
+        <div className="px-4 py-4">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              {/* 戻るボタン */}
+              <button
+                type="button"
+                onClick={onBack}
+                className="w-12 h-12 rounded-full bg-gray-700 hover:bg-gray-800 text-white flex items-center justify-center transition-all duration-300 shadow-lg hover:scale-105"
+                aria-label="戻る"
+              >
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  role="img"
+                  aria-label="戻るアイコン"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15 19l-7-7 7-7"
+                  />
+                </svg>
+              </button>
+
+              <div className="w-4 h-4 bg-gray-600 rounded-full animate-pulse shadow-lg shadow-gray-600/50"></div>
+              <div className="flex flex-col">
+                <h1 className="text-2xl font-black text-gray-900 leading-tight flex items-center gap-2">
+                  <FaDatabase />
+                  RAG管理
+                </h1>
+              </div>
+            </div>
+          </div>
         </div>
+      </header>
+
+      {/* メインコンテンツ */}
+      <div className="flex-1 overflow-hidden flex flex-col bg-white/95 backdrop-blur-sm shadow-2xl" style={{ zIndex: 10 }}>
 
         {/* 統計情報とモード切り替えを横並びに（ドキュメント閲覧中は非表示） */}
         {!viewingDocument && (
@@ -995,31 +926,6 @@ export function DocumentManager({ isOpen, onClose }: DocumentManagerProps) {
             </div>
           )}
         </div>
-
-        {/* フッター */}
-        <div className="px-4 py-3 bg-gray-50 border-t border-gray-200 flex justify-between items-center">
-          <div className="text-sm text-gray-500">
-            ヘッダーをドラッグで移動 | 右下をドラッグでサイズ変更
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-5 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-all font-medium text-base"
-          >
-            閉じる
-          </button>
-        </div>
-
-        {/* リサイズハンドル */}
-        <button
-          type="button"
-          className="absolute bottom-0 right-0 w-6 h-6 cursor-se-resize"
-          onMouseDown={handleResizeStart}
-          aria-label="ウィンドウサイズ変更"
-          style={{
-            background: "linear-gradient(135deg, transparent 50%, #cbd5e1 50%)",
-          }}
-        />
       </div>
     </div>
   );
