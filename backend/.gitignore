@@ -33,3 +33,4 @@ htmlcov/
 
 # Logs
 *.log
+test_chat.json
