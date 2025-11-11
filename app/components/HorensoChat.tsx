@@ -471,6 +471,22 @@ export function HorensoChat({ template, onComplete, onBack }: HorensoChatProps) 
     [sendMessage]
   );
 
+  // コンテキストウィンドウの使用率を計算
+  const calculateContextUsage = useCallback(() => {
+    const MAX_CONTEXT_TOKENS = 8192; // ローカルLLMの一般的なコンテキストサイズ
+
+    // メッセージの合計文字数を計算
+    const totalChars = messages.reduce((sum, msg) => sum + msg.content.length, 0);
+
+    // 簡易的なトークン数推定（日本語・英語混在を考慮して1文字=2.5トークン程度）
+    const estimatedTokens = Math.floor(totalChars * 2.5);
+
+    // 使用率を計算（0-100%）
+    const usagePercent = Math.min(100, (estimatedTokens / MAX_CONTEXT_TOKENS) * 100);
+
+    return usagePercent;
+  }, [messages]);
+
   const {
     isRecording,
     isSupported: isSpeechSupported,
@@ -791,6 +807,7 @@ export function HorensoChat({ template, onComplete, onBack }: HorensoChatProps) 
               isLoading={isLoading}
               isRecording={isRecording}
               isSpeechSupported={isSpeechSupported}
+              contextUsage={calculateContextUsage()}
               onInputChange={setInput}
               onSubmit={handleSubmit}
               onStartRecording={handleRecordingStart}
