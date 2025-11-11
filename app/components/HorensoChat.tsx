@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
+  FaArrowLeft,
   FaBars,
   FaCalendarAlt,
   FaCheckCircle,
@@ -653,16 +654,10 @@ export function HorensoChat({ template, onComplete, onBack }: HorensoChatProps) 
                 <button
                   type="button"
                   onClick={onBack}
-                  className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+                  className="w-12 h-12 rounded-full bg-gray-700 hover:bg-gray-800 text-white flex items-center justify-center transition-all duration-300 shadow-lg hover:scale-105"
+                  aria-label="戻る"
                 >
-                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M15 19l-7-7 7-7"
-                    />
-                  </svg>
+                  <FaArrowLeft className="text-xl" />
                 </button>
                 <div className="flex items-center gap-2">
                   <div className="text-2xl" title={template.description}>

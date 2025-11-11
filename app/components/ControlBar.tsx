@@ -89,7 +89,7 @@ export const ControlBar = forwardRef<ControlBarHandle, ControlBarProps>(function
   const getProgressColor = () => {
     if (contextUsage >= 85) return "bg-red-500"; // 85%以上: 赤（危険）
     if (contextUsage >= 60) return "bg-yellow-500"; // 60-85%: 黄色（警告）
-    return "bg-green-500"; // 0-60%: 緑（正常）
+    return "bg-gray-800"; // 0-60%: 濃いグレー
   };
 
   return (

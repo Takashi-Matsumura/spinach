@@ -6,6 +6,7 @@ import {
   FaCog,
   FaEdit,
   FaFileAlt,
+  FaInfoCircle,
   FaMicrochip,
   FaMicrophone,
   FaPlus,
@@ -414,7 +415,10 @@ export function AppInfo({ onBack }: AppInfoProps) {
 
               <div className="w-4 h-4 bg-gray-600 rounded-full animate-pulse shadow-lg shadow-gray-600/50"></div>
               <div className="flex flex-col">
-                <h1 className="text-2xl font-black text-gray-900 leading-tight">アプリ情報</h1>
+                <h1 className="text-2xl font-black text-gray-900 leading-tight flex items-center gap-2">
+                  <FaInfoCircle className="text-gray-700" />
+                  アプリ情報
+                </h1>
               </div>
             </div>
           </div>
