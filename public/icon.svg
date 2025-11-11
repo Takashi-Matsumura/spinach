@@ -1,11 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="64" fill="#10b981"/>
-  <g transform="translate(256, 256)">
-    <!-- Microphone icon -->
-    <path d="M-48-128 L48-128 C66.4-128 80-114.4 80-96 L80 0 C80 18.4 66.4 32 48 32 L-48 32 C-66.4 32 -80 18.4 -80 0 L-80-96 C-80-114.4 -66.4-128 -48-128 Z" fill="white"/>
-    <path d="M-112 0 C-112 53.6 -59.2 96 0 96 C59.2 96 112 53.6 112 0" stroke="white" stroke-width="24" fill="none" stroke-linecap="round"/>
-    <line x1="0" y1="96" x2="0" y2="144" stroke="white" stroke-width="24" stroke-linecap="round"/>
-    <line x1="-48" y1="144" x2="48" y2="144" stroke="white" stroke-width="24" stroke-linecap="round"/>
+  <rect width="512" height="512" rx="128" fill="#1f2937"/>
+  <g fill="#10b981">
+    <ellipse cx="256" cy="200" rx="120" ry="140" fill="#10b981" opacity="0.8"/>
+    <ellipse cx="180" cy="220" rx="80" ry="100" fill="#059669" opacity="0.7"/>
+    <ellipse cx="330" cy="220" rx="80" ry="100" fill="#059669" opacity="0.7"/>
+    <path d="M 256 100 Q 256 200 256 300" stroke="#047857" stroke-width="8" fill="none"/>
+    <path d="M 256 150 Q 200 180 160 220" stroke="#047857" stroke-width="6" fill="none"/>
+    <path d="M 256 150 Q 310 180 350 220" stroke="#047857" stroke-width="6" fill="none"/>
   </g>
-  <text x="256" y="440" font-family="sans-serif" font-size="72" font-weight="bold" fill="white" text-anchor="middle">EdgeAI</text>
+  <text x="256" y="420" font-family="Arial, sans-serif" font-size="80" font-weight="bold" fill="white" text-anchor="middle">Spinach</text>
 </svg>

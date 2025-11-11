@@ -1,0 +1,20 @@
+{
+  "name": "Spinach - AI日報アプリ",
+  "short_name": "Spinach",
+  "description": "音声入力対応のAI日報作成アプリ。マイク設定、RAG機能、ホウレンソウテンプレート搭載。",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#1f2937",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "categories": ["productivity", "business"],
+  "prefer_related_applications": false
+}
