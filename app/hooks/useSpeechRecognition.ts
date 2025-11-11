@@ -64,10 +64,25 @@ export function useSpeechRecognition({ onTranscript, onEnd }: UseSpeechRecogniti
     }
   }, [onTranscript, onEnd]);
 
-  const start = useCallback(() => {
+  const start = useCallback(async () => {
     if (!recognitionRef.current || isRecording) return;
 
     try {
+      // 選択されたマイクデバイスを取得してアクティブ化
+      const selectedDeviceId = localStorage.getItem("selectedMicrophoneId");
+      if (selectedDeviceId) {
+        try {
+          // 選択したデバイスでMediaStreamを取得（アクティブ化）
+          const stream = await navigator.mediaDevices.getUserMedia({
+            audio: { deviceId: { exact: selectedDeviceId } },
+          });
+          // すぐに停止（SpeechRecognitionが使用するため）
+          stream.getTracks().forEach((track) => track.stop());
+        } catch (error) {
+          console.warn("Failed to activate selected microphone, using default:", error);
+        }
+      }
+
       transcriptRef.current = "";
       recognitionRef.current.start();
       setIsRecording(true);

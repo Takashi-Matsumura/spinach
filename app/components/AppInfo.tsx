@@ -7,6 +7,7 @@ import {
   FaEdit,
   FaFileAlt,
   FaMicrochip,
+  FaMicrophone,
   FaPlus,
   FaSave,
   FaServer,
@@ -16,6 +17,7 @@ import {
 } from "react-icons/fa";
 import { config } from "../config";
 import { getTemplateById } from "../horenso/templates";
+import { MicrophoneSettings } from "./MicrophoneSettings";
 
 interface ModelSpecs {
   n_params: number;
@@ -74,7 +76,9 @@ interface AppInfoProps {
 }
 
 export function AppInfo({ onBack }: AppInfoProps) {
-  const [activeTab, setActiveTab] = useState<"model" | "settings" | "templates">("model");
+  const [activeTab, setActiveTab] = useState<"model" | "settings" | "templates" | "microphone">(
+    "model"
+  );
   const [modelInfo, setModelInfo] = useState<ModelInfoData | null>(null);
   const [settings, setSettings] = useState<BackendSettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -453,6 +457,18 @@ export function AppInfo({ onBack }: AppInfoProps) {
           >
             <FaFileAlt />
             日報設定
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("microphone")}
+            className={`px-6 py-2 rounded-lg font-semibold transition-all duration-200 flex items-center gap-2 ${
+              activeTab === "microphone"
+                ? "bg-gray-700 text-white shadow-lg"
+                : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+            }`}
+          >
+            <FaMicrophone />
+            マイク設定
           </button>
         </div>
       </header>
@@ -1057,6 +1073,13 @@ export function AppInfo({ onBack }: AppInfoProps) {
                       )}
                     </div>
                   </div>
+                </div>
+              )}
+
+              {/* Microphone Settings Tab */}
+              {activeTab === "microphone" && (
+                <div className="animate-fade-in">
+                  <MicrophoneSettings />
                 </div>
               )}
             </>
