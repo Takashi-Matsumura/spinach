@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  # フロントエンド（Next.js）
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_BACKEND_URL=http://backend:8000
+      - NEXT_PUBLIC_APP_NAME=Spinach
+      - NEXT_PUBLIC_APP_VERSION=0.1.0
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  # バックエンド（FastAPI）
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - LM_STUDIO_BASE_URL=${LM_STUDIO_BASE_URL:-http://host.docker.internal:8080/v1}
+      - LM_STUDIO_MODEL=${LM_STUDIO_MODEL:-/path/to/model.gguf}
+      - CHROMA_PERSIST_DIR=/app/chroma_data
+      - EMBEDDING_MODEL=intfloat/multilingual-e5-base
+      - RAG_TOP_K=3
+      - RAG_SIMILARITY_THRESHOLD=0.5
+      - CORS_ORIGINS=http://localhost:3000,http://frontend:3000
+    volumes:
+      - chroma_data:/app/chroma_data
+    restart: unless-stopped
+
+volumes:
+  chroma_data:
