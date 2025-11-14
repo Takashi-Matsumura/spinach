@@ -32,25 +32,72 @@ export default function Home() {
   const ragLongPressTimerRef = useRef<NodeJS.Timeout | null>(null);
   const controlBarRef = useRef<ControlBarHandle>(null);
   const autoSubmitRef = useRef(true); // 録音停止後の自動送信フラグ
+  const speechRecognitionRef = useRef<{
+    reset: () => void;
+    start: (force?: boolean) => void;
+    stop: () => void;
+  } | null>(null);
 
   const handleTranscript = useCallback((text: string) => {
     setInput(text);
   }, []);
 
-  const scrollToBottom = useCallback(() => {
+  // スクロールをスロットルするためのタイマーref
+  const scrollThrottleRef = useRef<NodeJS.Timeout | null>(null);
+  const lastScrollTimeRef = useRef<number>(0);
+
+  const scrollToBottom = useCallback((smooth = false) => {
     if (chatContainerRef.current) {
       const container = chatContainerRef.current;
-      requestAnimationFrame(() => {
-        container.scrollTop = container.scrollHeight;
-      });
+
+      if (smooth) {
+        // スムーズスクロール
+        container.scrollTo({
+          top: container.scrollHeight,
+          behavior: 'smooth'
+        });
+      } else {
+        // 即座にスクロール
+        requestAnimationFrame(() => {
+          container.scrollTop = container.scrollHeight;
+        });
+      }
     }
   }, []);
 
+  // スロットル付きスクロール（最大200msに1回）
+  const throttledScrollToBottom = useCallback(() => {
+    const now = Date.now();
+    const timeSinceLastScroll = now - lastScrollTimeRef.current;
+
+    // 200ms以内の場合は、タイマーで遅延実行
+    if (timeSinceLastScroll < 200) {
+      if (scrollThrottleRef.current) {
+        clearTimeout(scrollThrottleRef.current);
+      }
+      scrollThrottleRef.current = setTimeout(() => {
+        scrollToBottom(true); // スムーズスクロールを使用
+        lastScrollTimeRef.current = Date.now();
+      }, 200 - timeSinceLastScroll);
+    } else {
+      // 200ms以上経過している場合はすぐに実行
+      scrollToBottom(true); // スムーズスクロールを使用
+      lastScrollTimeRef.current = now;
+    }
+  }, [scrollToBottom]);
+
   useEffect(() => {
     if (isLoading && messages.length > 0) {
-      scrollToBottom();
+      throttledScrollToBottom();
     }
-  }, [messages, isLoading, scrollToBottom]);
+
+    // クリーンアップ
+    return () => {
+      if (scrollThrottleRef.current) {
+        clearTimeout(scrollThrottleRef.current);
+      }
+    };
+  }, [messages, isLoading, throttledScrollToBottom]);
 
   // Save session to API
   const saveSession = useCallback(async (sessionId: string, msgs: Message[]) => {
@@ -112,7 +159,7 @@ export default function Home() {
   }, [currentSessionId, messages, saveSession]);
 
   const sendMessage = useCallback(
-    async (text: string) => {
+    async (text: string, wasRecording = false) => {
       if (!text.trim() || isLoading) return;
 
       const userMessage: Message = {
@@ -212,8 +259,10 @@ export default function Home() {
       if (finalTranscript) {
         if (autoSubmitRef.current) {
           // タッチデバイス: 自動送信
+          speechRecognitionRef.current?.reset(); // 音声認識の内部状態をリセット
           sendMessage(finalTranscript);
           setInput("");
+          // 送信後は音声入力モードをOFFにする（自動再開しない）
         } else {
           // PC (マウス): inputにセットするだけ (手動送信)
           setInput(finalTranscript);
@@ -256,14 +305,33 @@ export default function Home() {
     isSupported: isSpeechSupported,
     start: startRecording,
     stop: stopRecording,
+    reset: resetRecognition,
   } = useSpeechRecognition({
     onTranscript: handleTranscript,
     onEnd: handleRecognitionEnd,
   });
 
+  // Refに関数を設定
+  speechRecognitionRef.current = {
+    reset: resetRecognition,
+    start: startRecording,
+    stop: stopRecording,
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    sendMessage(input);
+
+    // 音声認識が実行中の場合は停止してリセット
+    if (isRecording) {
+      stopRecording();
+      resetRecognition();
+      // 少し待ってから送信（送信後は音声入力モードをOFFのまま）
+      setTimeout(() => {
+        sendMessage(input);
+      }, 100);
+    } else {
+      sendMessage(input);
+    }
   };
 
   const handleClear = () => {

@@ -34,8 +34,9 @@ export function useSpeechRecognition({ onTranscript, onEnd }: UseSpeechRecogniti
         const results = (
           event as { results: { length: number; [key: number]: { 0: { transcript: string } } } }
         ).results;
-        let transcript = "";
 
+        // 音声認識セッション内の全ての結果を連結
+        let transcript = "";
         for (let i = 0; i < results.length; i++) {
           transcript += results[i][0].transcript;
         }
@@ -52,7 +53,6 @@ export function useSpeechRecognition({ onTranscript, onEnd }: UseSpeechRecogniti
       recognition.onend = () => {
         setIsRecording(false);
         const finalTranscript = transcriptRef.current.trim();
-        transcriptRef.current = "";
 
         if (finalTranscript) {
           setTimeout(() => onEnd(finalTranscript), 100);
@@ -64,8 +64,14 @@ export function useSpeechRecognition({ onTranscript, onEnd }: UseSpeechRecogniti
     }
   }, [onTranscript, onEnd]);
 
-  const start = useCallback(async () => {
-    if (!recognitionRef.current || isRecording) return;
+  const start = useCallback(async (force = false) => {
+    if (!recognitionRef.current) return;
+
+    // 既に録音中の場合は何もしない（強制モードでない場合のみ）
+    if (!force && isRecording) {
+      console.log("Already recording, skipping start");
+      return;
+    }
 
     try {
       // 選択されたマイクデバイスを取得してアクティブ化
@@ -86,9 +92,17 @@ export function useSpeechRecognition({ onTranscript, onEnd }: UseSpeechRecogniti
       transcriptRef.current = "";
       recognitionRef.current.start();
       setIsRecording(true);
+      console.log("Speech recognition started successfully");
     } catch (error) {
-      console.error("Failed to start recording:", error);
-      setIsRecording(false);
+      // 既に開始している場合のエラーは無視
+      const err = error as Error;
+      if (err.message && err.message.includes("already started")) {
+        console.log("Recognition already started, setting state to true");
+        setIsRecording(true);
+      } else {
+        console.error("Failed to start recording:", error);
+        setIsRecording(false);
+      }
     }
   }, [isRecording]);
 
@@ -97,10 +111,15 @@ export function useSpeechRecognition({ onTranscript, onEnd }: UseSpeechRecogniti
     recognitionRef.current.stop();
   }, []);
 
+  const reset = useCallback(() => {
+    transcriptRef.current = "";
+  }, []);
+
   return {
     isRecording,
     isSupported,
     start,
     stop,
+    reset,
   };
 }

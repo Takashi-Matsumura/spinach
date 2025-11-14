@@ -95,10 +95,12 @@ export function useMicrophoneDevices() {
       const audioContext = new AudioContext();
       const analyser = audioContext.createAnalyser();
       const microphone = audioContext.createMediaStreamSource(stream);
-      const dataArray = new Uint8Array(analyser.frequencyBinCount);
 
-      analyser.smoothingTimeConstant = 0.8;
-      analyser.fftSize = 1024;
+      // 時間領域データ用の設定（音量測定に適している）
+      analyser.smoothingTimeConstant = 0.3; // より速い応答のため小さめに設定
+      analyser.fftSize = 2048;
+      const dataArray = new Uint8Array(analyser.fftSize);
+
       microphone.connect(analyser);
 
       const updateLevel = () => {
@@ -107,9 +109,22 @@ export function useMicrophoneDevices() {
           return;
         }
 
-        analyser.getByteFrequencyData(dataArray);
-        const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
-        const level = Math.min(100, (average / 255) * 100 * 3); // 3倍にして感度を上げる
+        // 時間領域データを取得（波形データ）
+        analyser.getByteTimeDomainData(dataArray);
+
+        // RMS（二乗平均平方根）を計算
+        let sum = 0;
+        for (let i = 0; i < dataArray.length; i++) {
+          const normalized = (dataArray[i] - 128) / 128; // -1 to 1 に正規化
+          sum += normalized * normalized;
+        }
+        const rms = Math.sqrt(sum / dataArray.length);
+
+        // パーセンテージに変換（感度調整）
+        // RMSは通常0-1の範囲だが、実際の音声は0.1-0.3程度が多いため
+        // 5倍に増幅して見やすくする
+        const level = Math.min(100, rms * 500);
+
         setAudioLevel(level);
         requestAnimationFrame(updateLevel);
       };

@@ -74,6 +74,11 @@ nextjs-portal {
   scroll-behavior: smooth;
   scrollbar-width: thin;
   scrollbar-color: rgba(156, 163, 175, 0.3) transparent;
+  /* パフォーマンス最適化 */
+  will-change: scroll-position;
+  contain: layout style paint;
+  /* スクロールの慣性を改善 */
+  -webkit-overflow-scrolling: touch;
 }
 
 .chat-scroll::-webkit-scrollbar {
